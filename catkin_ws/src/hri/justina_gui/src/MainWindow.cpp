@@ -40,7 +40,7 @@ MainWindow::MainWindow(QWidget *parent) :
     QObject::connect(ui->navBtnCalcPath, SIGNAL(clicked()), this, SLOT(navBtnCalcPath_pressed()));
     QObject::connect(ui->navBtnExecPath, SIGNAL(clicked()), this, SLOT(navBtnExecPath_pressed()));
 
-    QObject::connect(ui->torTxtPos, SIGNAL(valueChanged(double)), this, SLOT(torSbPosValueChanged(double)));
+    //QObject::connect(ui->torTxtPos, SIGNAL(valueChanged(double)), this, SLOT(torSbPosValueChanged(double)));
 
     QObject::connect(ui->laBtnXp    , SIGNAL(clicked()), this, SLOT(laBtnXpPressed()));
     QObject::connect(ui->laBtnXm    , SIGNAL(clicked()), this, SLOT(laBtnXmPressed()));
@@ -362,7 +362,10 @@ void MainWindow::navBtnCalcPath_pressed()
 	return;
     }
 
-    qtRosNode->call_get_plan(startX, startY, goalX, goalY);
+    if(ui->cbPathPlanningMethod->currentIndex() == 0)
+        qtRosNode->call_get_plan_a_star(startX, startY, goalX, goalY);
+    else
+        qtRosNode->call_get_plan_rrt(startX, startY, goalX, goalY);
 }
 
 void MainWindow::navBtnExecPath_pressed()
@@ -402,7 +405,7 @@ void MainWindow::navBtnExecPath_pressed()
 
 void MainWindow::torSbPosValueChanged(double d)
 {
-    qtRosNode->publish_torso_position(ui->torTxtPos->value());
+    //qtRosNode->publish_torso_position(ui->torTxtPos->value());
 }
 
 /*

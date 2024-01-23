@@ -63,7 +63,8 @@ void QtRosNode::run()
     pubFakeSpeechRecog = n->advertise<hri_msgs::RecognizedSpeech>("/hri/sp_rec/recognized", 1);
     subRecogSpeech     = n->subscribe("/hri/sp_rec/recognized",1, &QtRosNode::callback_recognized_speech, this);
 
-    cltGetPlan             = n->serviceClient<nav_msgs::GetPlan>                ("/path_planning/a_star_search");
+    cltGetPlanAStar        = n->serviceClient<nav_msgs::GetPlan>                ("/path_planning/a_star_search");
+    cltGetPlanRRT          = n->serviceClient<nav_msgs::GetPlan>                ("/path_planning/rrt_search");
     cltFindLines           = n->serviceClient<vision_msgs::FindLines>           ("/vision/line_finder/find_table_edge");
     cltFindHoriPlanes      = n->serviceClient<vision_msgs::FindPlanes>          ("/vision/line_finder/find_horizontal_plane_ransac");
     cltTrainObject         = n->serviceClient<vision_msgs::TrainObject>         ("/vision/obj_reco/detect_and_train_object");
@@ -363,14 +364,24 @@ void QtRosNode::callback_recognized_speech(const hri_msgs::RecognizedSpeech::Con
     spr_recognized = msg->hypothesis[0];
 }
 
-bool QtRosNode::call_get_plan(float start_x, float start_y, float goal_x, float goal_y)
+bool QtRosNode::call_get_plan_a_star(float start_x, float start_y, float goal_x, float goal_y)
 {
     nav_msgs::GetPlan srv;
     srv.request.start.pose.position.x = start_x;
     srv.request.start.pose.position.y = start_y;
     srv.request.goal.pose.position.x = goal_x;
     srv.request.goal.pose.position.y = goal_y;
-    return cltGetPlan.call(srv);
+    return cltGetPlanAStar.call(srv);
+}
+
+bool QtRosNode::call_get_plan_rrt(float start_x, float start_y, float goal_x, float goal_y)
+{
+    nav_msgs::GetPlan srv;
+    srv.request.start.pose.position.x = start_x;
+    srv.request.start.pose.position.y = start_y;
+    srv.request.goal.pose.position.x = goal_x;
+    srv.request.goal.pose.position.y = goal_y;
+    return cltGetPlanRRT.call(srv);
 }
 
 bool QtRosNode::call_find_lines()
