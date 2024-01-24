@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 #
 # MOBILE ROBOTS - FI-UNAM, 2024-1
-# RRT
+# RAPIDLY EXPLORING RANDOM TREES
 #
 # Instructions:
 # Write the code necessary to plan a path using an
-# occupancy grid and the A* algorithm
+# occupancy grid and the RRT algorithm
 # MODIFY ONLY THE SECTIONS MARKED WITH THE 'TODO' COMMENT
 #
 
@@ -49,7 +49,7 @@ def get_random_q(grid_map):
 
 def get_nearest_node(tree, x, y):
     S = [tree] #Stack to traverse tree
-    N = []     #List of nodes
+    N = []     #List of all nodes
     while len(S) > 0:
         n = S.pop()
         N.append(n)
@@ -66,44 +66,33 @@ def get_new_node(nearest_node, rnd_x, rnd_y, epsilon):
     return Node(nearest_node.x + mag*(rnd_x - nearest_node.x)/dist, 
                 nearest_node.y + mag*(rnd_y - nearest_node.y)/dist, nearest_node)
 
-def check_collision(x1, y1, x2, y2, grid_map):
-    n = 2*int(max(abs(x2-x1), abs(y2-y1))/grid_map.info.resolution)
-    P = numpy.linspace([x1,y1], [x2,y2], n)
+def check_collision(n1, n2, grid_map):
+    n = 2*int(max(abs(n2.x-n1.x), abs(n2.y-n1.y))/grid_map.info.resolution)
+    P = numpy.linspace([n1.x,n1.y], [n2.x,n2.y], n)
     for x,y in P:
         if not in_free_space(x,y,grid_map):
             return True
     return False
 
 
-def rrt(start_x, start_y, goal_x, goal_y, grid_map, epsilon):
-    print("Calculating path by RRR from " + str([start_x, start_y])+" to "+str([goal_x, goal_y]))
-    steps = 0
-    
+def rrt(start_x, start_y, goal_x, goal_y, grid_map, epsilon, max_attempts):
     tree = Node(start_x, start_y)
-    goal_reached = False
-    while not goal_reached and steps < 10000:
+    goal_node = Node(goal_x, goal_y, None)
+    while goal_node.parent is None and max_attempts > 0:
         [x,y] = get_random_q(grid_map)
         nearest_node = get_nearest_node(tree, x, y)
         new_node     = get_new_node(nearest_node, x, y, epsilon)
-        if not check_collision(nearest_node.x, nearest_node.y, new_node.x, new_node.y, grid_map):
+        if not check_collision(nearest_node, new_node, grid_map):
             nearest_node.children.append(new_node)
-            if not check_collision(new_node.x, new_node.y, goal_x, goal_y, grid_map):
-                goal_node = Node(goal_x, goal_y, new_node)
+            if not check_collision(new_node, goal_node, grid_map):
                 new_node.children.append(goal_node)
-                goal_reached = True
-            steps += 1
-    #
-    # TODO:
-    # Review the RRT algorithm
-    #
+                goal_node.parent = new_node
+        max_attempts -= 1
+
     path = []
-    if goal_reached:
-        print("Path planned using RRT after " + str(steps) + " steps")
-        while goal_node.parent is not None:
-            path.insert(0, [goal_node.x, goal_node.y])
-            goal_node = goal_node.parent
-    else:
-        print("Cannot plan path after " + str(steps) + " steps")
+    while goal_node.parent is not None:
+        path.insert(0, [goal_node.x, goal_node.y])
+        goal_node = goal_node.parent
     return tree, path
 
 def get_tree_marker(tree):
@@ -111,6 +100,7 @@ def get_tree_marker(tree):
     mrk.header.stamp = rospy.Time.now()
     mrk.header.frame_id = "map"
     mrk.ns = "path_planning"
+    mrk.lifetime = rospy.Duration(10.0)
     mrk.id = 0
     mrk.type   = Marker.LINE_LIST
     mrk.action = Marker.ADD
@@ -143,14 +133,22 @@ def get_inflated_map():
 def callback_rrt(req):
     global msg_path, msg_tree
     grid_map = get_inflated_map()
-    tree,path = rrt(req.start.pose.position.x, req.start.pose.position.y,
-                    req.goal .pose.position.x, req.goal .pose.position.y, grid_map, 0.5)
-
+    [sx, sy] = [req.start.pose.position.x, req.start.pose.position.y]
+    [gx, gy] = [req.goal .pose.position.x, req.goal .pose.position.y]
+    epsilon = rospy.get_param("~epsilon", 0.5)
+    max_attempts = rospy.get_param("~max_n", 1000)
+    print("Planning path by RRT from "+str([sx,sy])+" to "+str([gx,gy])+" with e="+str(epsilon)+" and "+str(max_attempts)+" attempts.")
+    start_time = rospy.Time.now()
+    tree,path = rrt(sx, sy, gx, gy, grid_map, epsilon, max_attempts)
+    end_time = rospy.Time.now()
+    if len(path) > 0:
+        print("Path planned after " + str(1000*(end_time - start_time).to_sec()) + " ms")
+    else:
+        print("Cannot plan path from  " + str([sx, sy])+" to "+str([gx, gy]) + " :'(")
     msg_tree = get_tree_marker(tree)
     msg_path.poses = []
     for [x,y] in path:
         msg_path.poses.append(PoseStamped(pose=Pose(position=Point(x=x, y=y))))
-    print("Sending path in service response")
     return GetPlanResponse(msg_path)
 
 def main():
@@ -158,8 +156,8 @@ def main():
     print("RRT - " + NAME)
     rospy.init_node("rrt")
     rospy.wait_for_service('/inflated_map')
-    rospy.Service('/path_planning/rrt_search'  , GetPlan, callback_rrt)
-    pub_path = rospy.Publisher('/path_planning/rrt_path', Path, queue_size=10)
+    rospy.Service('/path_planning/plan_path'  , GetPlan, callback_rrt)
+    pub_path = rospy.Publisher('/path_planning/path', Path, queue_size=10)
     pub_tree = rospy.Publisher('/path_planning/rrt_tree', Marker, queue_size=10)
     loop = rospy.Rate(2)
     msg_path = Path()

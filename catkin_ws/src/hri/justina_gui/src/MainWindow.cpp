@@ -362,10 +362,7 @@ void MainWindow::navBtnCalcPath_pressed()
 	return;
     }
 
-    if(ui->cbPathPlanningMethod->currentIndex() == 0)
-        qtRosNode->call_get_plan_a_star(startX, startY, goalX, goalY);
-    else
-        qtRosNode->call_get_plan_rrt(startX, startY, goalX, goalY);
+    qtRosNode->call_plan_path(startX, startY, goalX, goalY);
 }
 
 void MainWindow::navBtnExecPath_pressed()

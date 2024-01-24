@@ -49,7 +49,6 @@ def a_star(start_r, start_c, goal_r, goal_c, grid_map, cost_map):
     in_open_list [start_r, start_c] = True
     g_values     [start_r, start_c] = 0
     [row, col] = [start_r, start_c]
-    iterations = 0
     
     while len(open_list) > 0 and [row, col] != [goal_r, goal_c]:
         [row, col] = heapq.heappop(open_list)[1]         
@@ -58,17 +57,10 @@ def a_star(start_r, start_c, goal_r, goal_c, grid_map, cost_map):
         for [r,c] in adjacent_nodes:
             if grid_map[r,c] > 40 or grid_map[r,c] < 0 or in_closed_list[r,c]: 
                 continue
-            #
-            # TODO:
-            # Modify calculations of 'g' and 'h' to use euclidean distance
-            # instead of Manhattan distance
-            #
             g = g_values[row, col] + abs(row-r) + abs(col-c) + cost_map[r][c]
             h = abs(goal_r - r) + abs(goal_c - c)
             # g = g_values[row, col] + math.sqrt((row-r)**2 + (col - c)**2) + cost_map[r][c]
             # h = math.sqrt((goal_r-r)**2 + (goal_c - c)**2)
-            #
-            
             f = g + h                         
             if g < g_values[r,c]:           
                 g_values[r,c]     = g           
@@ -77,16 +69,11 @@ def a_star(start_r, start_c, goal_r, goal_c, grid_map, cost_map):
             if not in_open_list[r,c]:
                 in_open_list[r,c] = True              
                 heapq.heappush(open_list, (f, [r,c]))            
-            iterations += 1
             
-    if [row, col] != [goal_r, goal_c]:
-        print("Cannot calculate path by A* :'(")
-        return []
-    print("Path calculated after " + str(iterations) + " iterations.")
     path = []
-    while parent_nodes[row, col][0] != -1:
-        path.insert(0, [row, col])
-        [row, col] = parent_nodes[row, col]
+    while parent_nodes[goal_r, goal_c][0] != -1:
+        path.insert(0, [goal_r, goal_c])
+        [goal_r, goal_c] = parent_nodes[goal_r, goal_c]
     return path
 
 def get_maps():
@@ -118,8 +105,14 @@ def callback_a_star(req):
     [sx, sy] = [req.start.pose.position.x, req.start.pose.position.y]
     [gx, gy] = [req.goal .pose.position.x, req.goal .pose.position.y]
     [zx, zy] = [s_map.info.origin.position.x, s_map.info.origin.position.y]
-    print("Calculating path by A* from " + str([sx, sy])+" to "+str([gx, gy]))
+    print("Planning path by A* from " + str([sx, sy])+" to "+str([gx, gy]))
+    start_time = rospy.Time.now()
     path = a_star(int((sy-zy)/res), int((sx-zx)/res), int((gy-zy)/res), int((gx-zx)/res), inflated_map, cost_map)
+    end_time = rospy.Time.now()
+    if len(path) > 0:
+        print("Path planned after " + str(1000*(end_time - start_time).to_sec()) + " ms")
+    else:
+        print("Cannot plan path from  " + str([sx, sy])+" to "+str([gx, gy]) + " :'(")
     msg_path.poses = []
     for [r,c] in path:
         msg_path.poses.append(PoseStamped(pose=Pose(position=Point(x=(c*res + zx), y=(r*res + zy)))))
@@ -129,8 +122,8 @@ def main():
     print("PRACTICE 02b - " + NAME)
     rospy.init_node("practice02b")
     rospy.wait_for_service('/static_map')
-    rospy.Service('/path_planning/a_star_search'  , GetPlan, callback_a_star)
-    pub_path = rospy.Publisher('/path_planning/a_star_path', Path, queue_size=10)
+    rospy.Service('/path_planning/plan_path'  , GetPlan, callback_a_star)
+    pub_path = rospy.Publisher('/path_planning/path', Path, queue_size=10)
     loop = rospy.Rate(2)
     msg_path.header.frame_id = "map"
     while not rospy.is_shutdown():

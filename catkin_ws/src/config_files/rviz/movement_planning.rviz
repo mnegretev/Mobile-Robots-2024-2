@@ -4,7 +4,6 @@ Panels:
     Name: Displays
     Property Tree Widget:
       Expanded:
-        - /RRT_tree1/Status1
         - /TF1/Frames1
       Splitter Ratio: 0.5
     Tree Height: 346
@@ -331,7 +330,7 @@ Visualization Manager:
       Radius: 0.029999999329447746
       Shaft Diameter: 0.10000000149011612
       Shaft Length: 0.10000000149011612
-      Topic: /path_planning/a_star_path
+      Topic: /path_planning/path
       Unreliable: false
       Value: true
     - Class: rviz/Marker
@@ -339,7 +338,7 @@ Visualization Manager:
       Marker Topic: /path_planning/rrt_tree
       Name: RRT_tree
       Namespaces:
-        path_planning: true
+        {}
       Queue Size: 1
       Value: true
     - Class: rviz/Image
@@ -554,7 +553,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 11.563423156738281
+      Distance: 16.492578506469727
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -562,9 +561,9 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 3.1563422679901123
-        Y: 4.367926597595215
-        Z: -0.9679096937179565
+        X: 5.819936752319336
+        Y: 5.533354759216309
+        Z: -1.359655737876892
       Focal Shape Fixed Size: false
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
-# MOBILE ROBOTS - FI-UNAM, 2024-1
-# PRACTICE 01 - MAPS 
+# MOBILE ROBOTS - FI-UNAM, 2024-2
+# MAP INFLATION 
 #
 # Instructions:
 # Complete the code necessary to inflate the obstacles given an occupancy grid map and
