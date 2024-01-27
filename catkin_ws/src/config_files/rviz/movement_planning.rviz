@@ -341,6 +341,14 @@ Visualization Manager:
         {}
       Queue Size: 1
       Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /navigation/pot_field_markers
+      Name: PotFieldForces
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: true
     - Class: rviz/Image
       Enabled: true
       Image Topic: /camera/depth_registered/rgb/image_raw
