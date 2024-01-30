@@ -25,7 +25,7 @@ Para probar que todo se instaló y compiló correctamente:
 
 * $ cd 
 * $ source Mobile-Robots-2024-2/catkin_ws/devel/setup.bash
-* $ roslaunch surge_et_ambula justina_gazebo.launch
+* $ roslaunch surge_et_ambula movement_planning.launch
 
 Si todo se instaló y compiló correctamente, se debería ver un visualizador como el siguiente:
 ![rviz](https://github.com/mnegretev/Mobile-Robots-2024-2/blob/main/Media/rviz.png)
