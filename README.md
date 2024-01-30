@@ -36,15 +36,6 @@ Un ambiente simulado como el siguiente:
 Y una GUI como la siguiente:
 ![GUIExample](https://github.com/mnegretev/Mobile-Robots-2024-1/assets/17507149/ee62eb5d-ddf8-45f3-a16a-88a9a45a0721)
 
-Se puede descargar una máquina virtual para [VirtualBox](https://www.virtualbox.org/wiki/Downloads) con Ubuntu y ROs ya instalado de [esta dirección.](https://drive.google.com/drive/folders/1T-gDsEb5Opl4gbx2qPQYEelyPnEe91Yk?usp=share_link) <br>
-El siguiente video muestra un ejemplo de cómo usar la máquina virtual:
-
-https://github.com/mnegretev/Mobile-Robots-2024-1/assets/17507149/d4d0ab86-cd33-48c6-a669-11ab6894908d
-
-Se recomienda configurar la máquina virtual con 4 CPUs y 4GB de RAM.<br>
-Usuario: justina <br>
-Contraseña: pumas
-
 
 ## Contacto
 Dr. Marco Negrete<br>
