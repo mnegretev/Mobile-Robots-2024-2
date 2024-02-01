@@ -25,16 +25,16 @@ Para probar que todo se instaló y compiló correctamente:
 
 * $ cd 
 * $ source Mobile-Robots-2024-2/catkin_ws/devel/setup.bash
-* $ roslaunch surge_et_ambula justina_gazebo.launch
+* $ roslaunch surge_et_ambula movement_planning.launch
 
 Si todo se instaló y compiló correctamente, se debería ver un visualizador como el siguiente:
-![rviz](https://github.com/mnegretev/Mobile-Robots-2024-1/assets/17507149/f4642036-ca45-4ab8-be41-d23bc4ab3720)
+![rviz](https://github.com/mnegretev/Mobile-Robots-2024-2/blob/main/Media/rviz.png)
 
 Un ambiente simulado como el siguiente:
-![gazebo](https://github.com/mnegretev/Mobile-Robots-2024-1/assets/17507149/d8d33093-51f2-4ce1-81a3-79339f86506c)
+![gazebo](https://github.com/mnegretev/Mobile-Robots-2024-2/blob/main/Media/gazebo.png)
 
 Y una GUI como la siguiente:
-![GUIExample](https://github.com/mnegretev/Mobile-Robots-2024-1/assets/17507149/ee62eb5d-ddf8-45f3-a16a-88a9a45a0721)
+![GUIExample](https://github.com/mnegretev/Mobile-Robots-2024-2/blob/main/Media/gui.png)
 
 
 ## Contacto
