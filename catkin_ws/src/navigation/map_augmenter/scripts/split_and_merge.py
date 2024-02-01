@@ -17,7 +17,7 @@ from sensor_msgs.msg   import LaserScan
 from geometry_msgs.msg import Twist, Point
 from visualization_msgs.msg import Marker
 
-NAME = "BETANCOURT ASTILLA JAIR"
+NAME = "FULL NAME"
 
 def adjust_line(points):
     [xm,ym] = numpy.mean(points, 0)
@@ -108,7 +108,7 @@ def callback_scan(msg):
 
 def main():
     global pub_line_markers, listener, distance_threshold, min_points_counting, rho_tolerance, theta_tolerance
-    print("INITIALIZING SPLIT AND MERGE ALGORITHM")
+    print("SPLIT AND MERGE ALGORITHM - " + NAME)
     rospy.init_node("split_and_merge")
     rospy.Subscriber("/hardware/scan", LaserScan, callback_scan)
     pub_line_markers = rospy.Publisher("/navigation/segmented_lines_marker", Marker, queue_size=1)

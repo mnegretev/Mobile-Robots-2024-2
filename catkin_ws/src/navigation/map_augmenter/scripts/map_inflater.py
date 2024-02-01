@@ -37,8 +37,8 @@ def callback_inflated_map(req):
 
 def main():
     global cost_map, inflated_map
-    print("PRACTICE 01 A - Map Inflation - " + NAME)
-    rospy.init_node("practice01a")
+    print("MAP INFLATION - " + NAME)
+    rospy.init_node("map_inflation")
     rospy.wait_for_service('/static_map')
     pub_map  = rospy.Publisher("/inflated_map", OccupancyGrid, queue_size=10)
     grid_map = rospy.ServiceProxy("/static_map", GetMap)().map

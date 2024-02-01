@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# MOBILE ROBOTS - FI-UNAM, 2024-1
+# MOBILE ROBOTS - FI-UNAM, 2024-2
 # GENERALIZED VORONOI DIAGRAMS
 #
 # Instructions:
@@ -83,8 +83,8 @@ def callback_point_stamped(msg):
     
 def main():
     global map_info, voronoi_map, distances
-    print("PRACTICE 01 C - GVD - " + NAME)
-    rospy.init_node("practice01c")
+    print("GENERALIZED VORONOI DIAGRAMS - " + NAME)
+    rospy.init_node("gvd")
     pub_map  = rospy.Publisher("/voronoi", OccupancyGrid, queue_size=10)
     sub_point= rospy.Subscriber("/clicked_point", PointStamped, callback_point_stamped)
     rospy.wait_for_service('/inflated_map')

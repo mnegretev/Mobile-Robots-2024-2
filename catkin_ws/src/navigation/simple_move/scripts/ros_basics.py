@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # MOBILE ROBOTS - FI-UNAM, 2024-2
-# ASSIGNMENT 02 - THE PLATFORM ROS 
+# THE PLATFORM ROS 
 #
 # Instructions:
 # Write a program to move the robot forwards until the laser
@@ -26,8 +26,8 @@ def callback_scan(msg):
     return
 
 def main():
-    print("ASSIGNMENT 02 - " + NAME)
-    rospy.init_node("assignment02")
+    print("ROS BASICS - " + NAME)
+    rospy.init_node("ros_basics")
     rospy.Subscriber("/hardware/scan", LaserScan, callback_scan)
     pub_cmd_vel = rospy.Publisher("/cmd_vel", Twist, queue_size=10)
     loop = rospy.Rate(10)
