@@ -415,6 +415,8 @@ Visualization Manager:
       Value: true
     - Class: rviz/TF
       Enabled: true
+      Filter (blacklist): ""
+      Filter (whitelist): ""
       Frame Timeout: 15
       Frames:
         All Enabled: false
@@ -565,8 +567,6 @@ Visualization Manager:
     Frame Rate: 30
   Name: root
   Tools:
-    - Class: rviz/Interact
-      Hide Inactive Objects: true
     - Class: rviz/MoveCamera
     - Class: rviz/Select
     - Class: rviz/FocusCamera
@@ -585,7 +585,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 16.492578506469727
+      Distance: 16.398218154907227
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -601,9 +601,9 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.424795150756836
+      Pitch: 1.1597964763641357
       Target Frame: <Fixed Frame>
-      Yaw: 0.0004076957702636719
+      Yaw: 0.010406265035271645
     Saved: ~
 Window Geometry:
   Displays:
@@ -623,5 +623,5 @@ Window Geometry:
   Views:
     collapsed: true
   Width: 1528
-  X: 72
-  Y: 327
+  X: 145
+  Y: 128
