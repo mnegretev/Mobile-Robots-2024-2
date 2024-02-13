@@ -43,9 +43,9 @@ def main():
         # Move forward if there is no obstacle in front of the robot, and stop otherwise.
         # Use the 'obstacle_detected' variable to check if there is an obstacle. 
         # Publish the Twist message using the already declared publisher 'pub_cmd_vel'.
-    	msg_cmd_vel = Twist()
-    	msg_cmd_vel.linear.x = o if obstacle_detected else 0.3
-    	pub_cmd_vel.publish(msg_cmd_vel)
+        msg_cmd_vel = Twist()
+        msg_cmd_vel.linear.x = o if obstacle_detected else 0.3
+        pub_cmd_vel.publish(msg_cmd_vel)
         
         loop.sleep()
 
