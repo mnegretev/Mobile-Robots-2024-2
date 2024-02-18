@@ -19,7 +19,7 @@ from nav_msgs.msg import Path
 from nav_msgs.srv import *
 from collections import deque
 
-NAME = "FULL NAME"
+NAME = "Geovanni Romero Rivera"
 
 class Node:
     def __init__(self, x, y, parent=None):
