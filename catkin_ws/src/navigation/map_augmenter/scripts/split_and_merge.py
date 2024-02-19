@@ -65,8 +65,8 @@ def merge(lines, rho_tol, theta_tol):
         else:
             new_lines.append([rho1, theta1, xm1, ym1, length1])
             new_lines.append([rho2, theta2, xm2, ym2, length2])
-       if len(points) < min_points:
-        return lines
+        if len(points) < min_points:
+            return lines
     rho, theta, xm, ym, length = adjust_line(points)
     idx, dist = find_farthest_point(points, rho, theta)
     if dist < threshold:
