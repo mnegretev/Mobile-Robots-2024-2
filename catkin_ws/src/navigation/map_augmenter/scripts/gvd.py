@@ -50,11 +50,11 @@ def brushfire(grid_map):
         for k1, k2 in offsets_8:
             if distances[i+k1, j+k2] == -1:
                 Q.put([i+k1, j+k2])
-                #distances[i+k1, j+k2] = d + 2
-                distances[i+k1, j+k2] = d + math.sqrt(2.0)
+                distances[i+k1, j+k2] = d + 2 # distancia manhattan
+                #distances[i+k1, j+k2] = d + math.sqrt(2.0) # distancia euclidiana
             else:
-                #distances[i+k1, j+k2] = min(distances[i+k1, j+k2], d+ 2)
-                distances[i+k1, j+k2] = min(distances[i+k1, j+k2], d+ math.sqrt(2.0))
+                distances[i+k1, j+k2] = min(distances[i+k1, j+k2], d+ 2) # distancia manhattan
+                #distances[i+k1, j+k2] = min(distances[i+k1, j+k2], d+ math.sqrt(2.0)) # distancia euclidiana
     return distances
 
 def find_maxima(distances):
