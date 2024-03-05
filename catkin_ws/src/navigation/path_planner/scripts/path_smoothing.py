@@ -9,6 +9,7 @@
 #
 
 import numpy
+import numpy as np
 import heapq
 import rospy
 from nav_msgs.msg import Path
@@ -16,7 +17,7 @@ from geometry_msgs.msg import Pose, PoseStamped, Point
 from navig_msgs.srv import ProcessPath
 from navig_msgs.srv import ProcessPathResponse
 
-NAME = "FULL NAME"
+NAME = "RAUL REYES HERNANDEZ"
 
 def smooth_path(Q, alpha, beta, max_steps):
     #
@@ -28,14 +29,21 @@ def smooth_path(Q, alpha, beta, max_steps):
     # The smoothed path must have the same shape.
     # Return the smoothed path.
     #
-    P = numpy.copy(Q)
-    tol     = 0.00001                   
-    nabla   = numpy.full(Q.shape, float("inf"))
-    epsilon = 0.1                       
+    P = np.copy(Q)
+    tol = 0.00001
+    epsilon = 0.1
     
-    
+    for _ in range(max_steps):
+        max_gradient_norm = 0
+        for i in range(1, len(Q) - 1):
+            grad_i = alpha * (2 * P[i] - P[i - 1] - P[i + 1]) + beta * (P[i] - Q[i])
+            max_gradient_norm = max(max_gradient_norm, np.linalg.norm(grad_i))
+            P[i] -= epsilon * grad_i
+        if max_gradient_norm < tol:
+            break
+            
     return P
-
+    
 def callback_smooth_path(req):
     global msg_smooth_path
     alpha = rospy.get_param('~alpha', 0.9)
