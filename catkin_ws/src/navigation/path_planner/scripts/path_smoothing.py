@@ -28,12 +28,21 @@ def smooth_path(Q, alpha, beta, max_steps):
     # The smoothed path must have the same shape.
     # Return the smoothed path.
     #
+    steps = 0
     P = numpy.copy(Q)
     tol     = 0.00001                   
     nabla   = numpy.full(Q.shape, float("inf"))
-    epsilon = 0.1                       
-    
-    
+    epsilon = 0.1
+    mag = tol + 1
+    while mag > tol and steps < max_steps:
+            
+        nabla[0] = 0
+        nabla[len(nabla)-1]=0
+        for i in range(1,len(nabla)-1):
+            nabla[i] = alpha*(2*P[i]-P[i-1]-P[i+1])+ beta*(P[i]-Q[i])
+        P = P-epsilon*nabla
+        steps = steps + 1
+        mag = numpy.linalg.norm(nabla)
     return P
 
 def callback_smooth_path(req):
