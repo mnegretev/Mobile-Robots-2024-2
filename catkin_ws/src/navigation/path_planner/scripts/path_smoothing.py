@@ -18,6 +18,7 @@ from navig_msgs.srv import ProcessPathResponse
 
 NAME = "FULL NAME"
 
+
 def smooth_path(Q, alpha, beta, max_steps):
     #
     # TODO:
@@ -28,37 +29,39 @@ def smooth_path(Q, alpha, beta, max_steps):
     # The smoothed path must have the same shape.
     # Return the smoothed path.
     #
-    
+
     P = numpy.copy(Q)
-    tol     = 0.00001                   
-    nabla   = numpy.full(Q.shape, float("inf"))
+    tol = 0.00001
+    nabla = numpy.full(Q.shape, float("inf"))
     epsilon = 0.1
-    
+
     steps = 0
-    nabla [0] = 0
-    nabla [-1] = 0
+    nabla[0] = 0
+    nabla[-1] = 0
     while numpy.linalg.norm(nabla) > tol and steps < max_steps:
         for i in range(1, len(Q) - 1):
             nabla[i] = alpha * (2 * P[i] - P[i - 1] - P[i + 1]) + beta * (P[i] - Q[i])
-    P = P - (epsilon * nabla)
-    steps += 1          
-    
+        P = P - epsilon * nabla
+        steps += 1
+
     return P
+
 
 def callback_smooth_path(req):
     global msg_smooth_path
     alpha = rospy.get_param('~alpha', 0.9)
-    beta  = rospy.get_param('~beta', 0.1 )
+    beta = rospy.get_param('~beta', 0.1)
     steps = rospy.get_param('~steps', 10000)
-    print("Smoothing path with params: " + str([alpha,beta,steps]))
+    print("Smoothing path with params: " + str([alpha, beta, steps]))
     start_time = rospy.Time.now()
     P = smooth_path(numpy.asarray([[p.pose.position.x, p.pose.position.y] for p in req.path.poses]), alpha, beta, steps)
     end_time = rospy.Time.now()
-    print("Path smoothed after " + str(1000*(end_time - start_time).to_sec()) + " ms")
+    print("Path smoothed after " + str(1000 * (end_time - start_time).to_sec()) + " ms")
     msg_smooth_path.poses = []
     for i in range(len(req.path.poses)):
-        msg_smooth_path.poses.append(PoseStamped(pose=Pose(position=Point(x=P[i,0],y=P[i,1]))))
+        msg_smooth_path.poses.append(PoseStamped(pose=Pose(position=Point(x=P[i, 0], y=P[i, 1]))))
     return ProcessPathResponse(processed_path=msg_smooth_path)
+
 
 def main():
     global msg_smooth_path
@@ -73,6 +76,7 @@ def main():
         pub_path.publish(msg_smooth_path)
         loop.sleep()
 
+
 if __name__ == '__main__':
     main()
-    
+
