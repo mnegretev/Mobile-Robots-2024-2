@@ -24,7 +24,7 @@ laser_readings = None
 v_max = 0.6
 w_max = 1.0
 
-NAME = "FULL NAME"
+NAME = "MOLINA GONZALEZ JOSE ANGEL"
 
 def calculate_control(goal_x, goal_y, alpha, beta):
     v,w = 0,0
@@ -35,7 +35,11 @@ def calculate_control(goal_x, goal_y, alpha, beta):
     # w = w_max*(2/(1 + math.exp(-error_a/beta)) - 1)
     # Return v and w as a tuble [v,w]
     #    
-    
+    error_a = math.atan2(goal_y, goal_x)
+
+    v = v_max*math.exp(-error_a*error_a/alpha)
+    w = w_max*(2/(1 + math.exp(-error_a/beta)) - 1)
+
     return [v,w]
 
 def attraction_force(goal_x, goal_y, eta):
@@ -47,6 +51,8 @@ def attraction_force(goal_x, goal_y, eta):
     # where force_x and force_y are the X and Y components
     # of the resulting attraction force
     #
+    vector = numpy.array([goal_x,goal_y])
+    force_x, force_y = -eta * vector / numpy.linalg.norm(vector)
     
     return numpy.asarray([force_x, force_y])
 
@@ -66,7 +72,17 @@ def rejection_force(laser_readings, zeta, d0):
     # where force_x and force_y are the X and Y components
     # of the resulting rejection force
     #
-    
+
+    for laser_lecture in laser_readings:
+        d = laser_lecture[0]
+        if d < d0:
+            theta = laser_lecture[1]
+            rho = zeta*math.sqrt((1/d)-(1/d0))
+            force_x += rho*math.cos(theta)
+            force_y += rho*math.sin(theta)
+
+    force_x = force_x/N
+    force_y = force_y/N
         
     return numpy.asarray([force_x, force_y])
 
@@ -75,6 +91,16 @@ def move_by_pot_fields(global_goal_x, global_goal_y, epsilon, tol, eta, zeta, d0
     # TODO
     # Implement potential fields given a goal point and tunning constants 
     #
+
+    goal_x, goal_y = get_goal_point_wrt_robot(global_goal_x, global_goal_y)
+    while math.sqrt(goal_x**2 + goal_y**2) > tol and not rospy.is_shutdown():
+        Fa = attraction_force(goal_x, goal_y, eta)
+        Fr = rejection_force(laser_readings, zeta, d0)
+        F = Fa + Fr
+        P = -epsilon*F
+        [v,w] = calculate_control(P[0], P[1], alpha, beta)
+        publish_speed_and_forces(v, w, Fa, Fr, F)
+        goalx, goal_y = get_goal_point_wrt_robot(global_goal_x, global_goal_y)
     
     return
         
