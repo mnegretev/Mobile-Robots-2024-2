@@ -19,7 +19,7 @@ from nav_msgs.srv import GetPlan, GetPlanRequest
 from navig_msgs.srv import ProcessPath, ProcessPathRequest
 from geometry_msgs.msg import Twist, PoseStamped, Pose, Point
 
-NAME = "FULL NAME"
+NAME = "MOLINA GONZALEZ JOSE ANGEL"
 
 pub_goal_reached = None
 pub_cmd_vel = None
