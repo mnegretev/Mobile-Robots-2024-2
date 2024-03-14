@@ -24,7 +24,7 @@ laser_readings = None
 v_max = 0.6
 w_max = 1.0
 
-NAME = "FULL NAME"
+NAME = "ANA FRAGOSO"
 
 def calculate_control(goal_x, goal_y, alpha, beta):
     v,w = 0,0
@@ -38,7 +38,6 @@ def calculate_control(goal_x, goal_y, alpha, beta):
     error_a = math.atan2(goal_y,goal_x)
     v = v_max*math.exp(-error_a*error_a/alpha)
     w = w_max*(2/(1+math.exp(-error_a/beta))-1)
-    
     return [v,w]
 
 def attraction_force(goal_x, goal_y, eta):
