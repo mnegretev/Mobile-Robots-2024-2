@@ -31,8 +31,9 @@ def calculate_control(goal_x, goal_y, alpha, beta):
     #
     # TODO:
     # Implement the control law given by:
-    # v = v_max*math.exp(-error_a*error_a/alpha)
-    # w = w_max*(2/(1 + math.exp(-error_a/beta)) - 1)
+    error_a = math.atan2(goal_y,goal_x)
+    v = v_max*math.exp(-error_a*error_a/alpha)
+    w = w_max*(2/(1 + math.exp(-error_a/beta)) - 1)
     # Return v and w as a tuble [v,w]
     #    
     
@@ -47,6 +48,11 @@ def attraction_force(goal_x, goal_y, eta):
     # where force_x and force_y are the X and Y components
     # of the resulting attraction force
     #
+    
+    force_x= -eta*(goal_x/abs(goal_x))
+    force_y= -eta*(goal_y/abs(goal_y))
+    
+    
     
     return numpy.asarray([force_x, force_y])
 
@@ -67,6 +73,12 @@ def rejection_force(laser_readings, zeta, d0):
     # of the resulting rejection force
     #
     
+    for [d,theta] in laser_readings:
+        mag = zeta*math.sqrt(1/d - 1/d0) if d < d0 and d > 0 else 0
+        force_x += mag*math.cos(theta)
+        force_y += mag*math.sin(theta)
+    force_x, force_y =  force_x/N , force_y/N
+        
         
     return numpy.asarray([force_x, force_y])
 
@@ -75,6 +87,16 @@ def move_by_pot_fields(global_goal_x, global_goal_y, epsilon, tol, eta, zeta, d0
     # TODO
     # Implement potential fields given a goal point and tunning constants 
     #
+    goal_x, goal_y = get_goal_point_wrt_robot(global_goal_x , global_goal_y)
+    while math.sqrt(goal_x**2 + goal_y**2) > tol and not rospy.is_shutdown():
+        Fa = attraction_force (goal_x , goal_y , eta)
+        Fr = rejection_force (laser_reading, zeta, d0)
+        F = Fa + Fr
+        P = -epsilon*F
+        [v , w] = calculate_control (P[0], P[1], alpha, beta) 
+        publish_speed_and_force(v,w,Fa,Fr,F)
+        goal_x, goal_y = get_goal_point_wrt_robot(global_goal_x , global_goal_y)
+    
     
     return
         
