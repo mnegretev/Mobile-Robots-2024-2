@@ -24,7 +24,7 @@ laser_readings = None
 v_max = 0.6
 w_max = 1.0
 
-NAME = "FULL NAME"
+NAME = "Emilio Flores Eljure"
 
 def calculate_control(goal_x, goal_y, alpha, beta):
     v,w = 0,0
@@ -35,7 +35,10 @@ def calculate_control(goal_x, goal_y, alpha, beta):
     # w = w_max*(2/(1 + math.exp(-error_a/beta)) - 1)
     # Return v and w as a tuble [v,w]
     #    
-    
+    error_a = math.atan2(goal_y, goal_x)
+    error_a = (error_a + math.pi) % (2 * math.pi) - math.pi
+    v = v_max*math.exp(-error_a*error_a/alpha)
+    w = w_max*(2/(1 + math.exp(-error_a/beta)) - 1)
     return [v,w]
 
 def attraction_force(goal_x, goal_y, eta):
@@ -47,7 +50,12 @@ def attraction_force(goal_x, goal_y, eta):
     # where force_x and force_y are the X and Y components
     # of the resulting attraction force
     #
-    
+    #x_comp = robot_x - goal_x
+    #  y_comp stands for y component
+    #y_comp = robot_y - goal_y
+    # mag stands for magnitude
+    mag = math.sqrt(goal_x ** 2 + goal_y ** 2)
+    force_x, force_y = (-1*eta)*(goal_x / mag), (-1*eta)*(goal_y / mag)
     return numpy.asarray([force_x, force_y])
 
 def rejection_force(laser_readings, zeta, d0):
@@ -66,6 +74,16 @@ def rejection_force(laser_readings, zeta, d0):
     # where force_x and force_y are the X and Y components
     # of the resulting rejection force
     #
+    for d_i,theta_i in laser_readings:
+        if d_i < d0:
+            ro = zeta * math.sqrt((1/d_i) - (1/d0))
+        else:
+            ro =0
+        force_x = force_x + (ro * math.cos(theta_i))
+        # yoi is the x component of the unit vector to the i obstacle w.r.t robot's frame
+        force_y = force_y + (ro * math.sin(theta_i))
+    force_x = force_x / N
+    force_y = force_y / N
     
         
     return numpy.asarray([force_x, force_y])
@@ -75,7 +93,15 @@ def move_by_pot_fields(global_goal_x, global_goal_y, epsilon, tol, eta, zeta, d0
     # TODO
     # Implement potential fields given a goal point and tunning constants 
     #
-    
+    goal_x, goal_y = get_goal_point_wrt_robot (global_goal_x,global_goal_y)
+    while math.sqrt(goal_x**2+goal_y**2) > tol and not rospy.is_shutdown():
+        Fa = attraction_force (goal_x,goal_y,eta)
+        Fr= rejection_force (laser_readings,zeta,d0)
+        F = Fa + Fr
+        P = -epsilon*F
+        [v,w] = calculate_control (P[0],P[1],alpha,beta)
+        publish_speed_and_forces(v,w,Fa,Fr,F)
+        goal_x,goal_y = get_goal_point_wrt_robot(global_goal_x,global_goal_y)
     return
         
 
