@@ -73,7 +73,7 @@ def rejection_force(laser_readings, zeta, d0):
     # of the resulting rejection force
     #
     for [d, theta] in laser_readings:
-    	mag = zeta*math.sqrt(1/d - 1/d0) id d < d0 and d > 0 else 0
+    	mag = zeta*math.sqrt(1/d - 1/d0) if d < d0 and d > 0 else 0
     	force_x += mag*math.cos(theta) 
     	force_y += mag*math.sin(theta)
     force_x, force_y = force_x/N, force_y/N
@@ -89,7 +89,7 @@ def move_by_pot_fields(global_goal_x, global_goal_y, epsilon, tol, eta, zeta, d0
     	Fa = attraction_force(goal_x , goal_y , eta)
     	Fr = rejection_force (laser_readings , zeta , d0)
     	F = Fa + Fr
-    	P = −epsilon*F
+    	P = -epsilon*F
     	[v,w] = calculate_control(P[0] , P[1] , alpha , beta)
     	publish_speed_and_forces(v, w, Fa, Fr, F)
     	goal_x, goal_y = get_goal_point_wrt_robot(global_goal_x, global_goal_y)
