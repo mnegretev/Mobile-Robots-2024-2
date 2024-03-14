@@ -31,7 +31,8 @@ def calculate_control(goal_x, goal_y, alpha, beta):
     #
     # TODO:
     # Implement the control law given by:
-    error_a = math.atan2(goal_y,goal_x)
+    error_a = math.atan2(goal_y, goal_x)
+    error_a = (error_a + math.pi)%(2*math.pi)-math.pi
     v = v_max*math.exp(-error_a*error_a/alpha)
     w = w_max*(2/(1 + math.exp(-error_a/beta)) - 1)
     # Return v and w as a tuble [v,w]
@@ -48,9 +49,9 @@ def attraction_force(goal_x, goal_y, eta):
     # where force_x and force_y are the X and Y components
     # of the resulting attraction force
     #
-    
-    force_x= -eta*(goal_x/abs(goal_x))
-    force_y= -eta*(goal_y/abs(goal_y))
+    mag = math.sqrt(goal_x**2 + goal_y**2)
+    force_x= -eta*(goal_x/mag)
+    force_y= -eta*(goal_y/mag)
     
     
     
@@ -90,11 +91,11 @@ def move_by_pot_fields(global_goal_x, global_goal_y, epsilon, tol, eta, zeta, d0
     goal_x, goal_y = get_goal_point_wrt_robot(global_goal_x , global_goal_y)
     while math.sqrt(goal_x**2 + goal_y**2) > tol and not rospy.is_shutdown():
         Fa = attraction_force (goal_x , goal_y , eta)
-        Fr = rejection_force (laser_reading, zeta, d0)
+        Fr = rejection_force (laser_readings, zeta, d0)
         F = Fa + Fr
         P = -epsilon*F
         [v , w] = calculate_control (P[0], P[1], alpha, beta) 
-        publish_speed_and_force(v,w,Fa,Fr,F)
+        publish_speed_and_forces(v,w,Fa,Fr,F)
         goal_x, goal_y = get_goal_point_wrt_robot(global_goal_x , global_goal_y)
     
     
