@@ -39,7 +39,7 @@ std::vector<geometry_msgs::Pose2D> get_initial_distribution(int N, float min_x, 
     return particles;
 }
 
-void move_particles(std::vector<geometry_msgs::Pose2D>& particles, float delta_x, float delta_y, float delta_t, float sigma2)
+void move_particles(std::vector<geometry_msgs::Pose2D>& particles, float delta_x, float delta_y, float delta_t, float sigma2, int& cont_iteraciones)
 {
     random_numbers::RandomNumberGenerator rnd;
     /*
@@ -58,6 +58,8 @@ void move_particles(std::vector<geometry_msgs::Pose2D>& particles, float delta_x
         particles[i].y +=delta_x*sin(t) + delta_y*cos(t) + rnd.gaussian(0,sigma2);
         particles[i].theta += delta_t + rnd.gaussian(0,sigma2);
     }
+    cont_iteraciones ++;
+    std::cout << "Iteraciones: " << cont_iteraciones <<std::endl;
 }
 
 std::vector<sensor_msgs::LaserScan> simulate_particle_scans(std::vector<geometry_msgs::Pose2D>& particles,
@@ -266,6 +268,7 @@ int main(int argc, char** argv)
     float init_max_y;
     float init_max_a;
     int laser_downsampling;
+    int cont_iteraciones = 0;
     float sigma2_sensor;
     float sigma2_movement;
     float sigma2_resampling;
@@ -325,7 +328,7 @@ int main(int argc, char** argv)
     
             /*
              */
-            move_particles(particles, delta_pose.x, delta_pose.y, delta_pose.theta, sigma2_movement);
+            move_particles(particles, delta_pose.x, delta_pose.y, delta_pose.theta, sigma2_movement, cont_iteraciones);
 	    simulated_scans = simulate_particle_scans(particles, static_map, sensor_specs);
             similarities = calculate_particle_similarities(simulated_scans, real_scan, laser_downsampling, sigma2_sensor);
             particles = resample_particles(particles, similarities, sigma2_resampling);
