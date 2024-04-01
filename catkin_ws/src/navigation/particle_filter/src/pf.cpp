@@ -117,7 +117,7 @@ std::vector<float> calculate_particle_similarities(std::vector<sensor_msgs::Lase
     for(int i=0; i<similarities.size(); i++)
         sum += similarities[i]; 
     for(int i=0; i<similarities.size(); i++)
-        similiarities[i] /= sum; 
+        similarities[i] /= sum; 
     /*
      */
     return similarities;
@@ -173,7 +173,7 @@ geometry_msgs::Pose2D get_robot_odometry()
     tf::StampedTransform t;
     geometry_msgs::Pose2D pose;
     try{
-        listener.waitForTransform("odom", "base_link", ros::Time(0), ros::Duration(1.0));
+        listener.waitForTransform("odom", "base_link", ros::Time(0), ros::Duration(10.0));
         listener.lookupTransform("odom", "base_link", ros::Time(0), t);
         pose.x = t.getOrigin().x();
         pose.y = t.getOrigin().y();
