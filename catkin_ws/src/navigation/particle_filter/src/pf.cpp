@@ -19,22 +19,19 @@
 #define DISTANCE_THRESHOLD  0.2
 #define ANGLE_THRESHOLD     0.2
 
-#define NOMBRE "APELLIDO_PATERNO_APELLIDO_MATERNO"
+#define NOMBRE "ROCANDIO MONTIEL JESUS ALEXIS"
 
 std::vector<geometry_msgs::Pose2D> get_initial_distribution(int N, float min_x, float max_x, float min_y, float max_y,
                                                              float min_a, float max_a)
 {
     random_numbers::RandomNumberGenerator rnd;
     std::vector<geometry_msgs::Pose2D> particles(N);
-    /*
-     * TODO:
-     * Generate a set of N particles (each particle represented by a Pose2D message)
-     * with positions uniformly distributed within bounding box given by min_x, ..., max_a.
-     * To generate uniformly distributed random numbers, you can use the funcion rnd.uniformReal(min, max)
-     */
-
-    /*
-     */
+    
+    for (int i = 0; i < N; ++i) {
+        particles[i].x = rnd.uniformReal(min_x, max_x);
+        particles[i].y = rnd.uniformReal(min_y, max_y);
+        particles[i].theta = rnd.uniformReal(min_a, max_a);
+    }
     return particles;
 }
 
@@ -50,7 +47,22 @@ void move_particles(std::vector<geometry_msgs::Pose2D>& particles, float delta_x
      * Add gaussian noise to each new position. Use sigma2 as variance.
      * You can use the function rnd.gaussian(mean, variance)
      */
-    
+    for(size_t i=0; i < particles.size(); i++)
+    {
+        // Calcula la rotación del movimiento en base a la orientación de la partícula
+        float t = particles[i].theta;
+        float rotated_delta_x = delta_x * cos(t) - delta_y * sin(t);
+        float rotated_delta_y = delta_x * sin(t) + delta_y * cos(t);
+
+        // Actualiza la posición y orientación de la partícula, añade ruido gaussiano
+        particles[i].x += rotated_delta_x + rnd.gaussian(0, sigma2);
+        particles[i].y += rotated_delta_y + rnd.gaussian(0, sigma2);
+        particles[i].theta += delta_t + rnd.gaussian(0, sigma2);
+        //std::cout << "Moviendo partícula: " << i + 1 << " / " << particles.size() << std::endl;
+        // Normaliza el ángulo theta de la partícula para que esté entre -π y π
+        particles[i].theta = atan2(sin(particles[i].theta), cos(particles[i].theta));
+    }
+       // std::cout << "Se han movido todas las " << particles.size() << " partículas." << std::endl;
 }
 
 std::vector<sensor_msgs::LaserScan> simulate_particle_scans(std::vector<geometry_msgs::Pose2D>& particles,
@@ -78,6 +90,7 @@ std::vector<float> calculate_particle_similarities(std::vector<sensor_msgs::Lase
 {
     std::vector<float> similarities;
     similarities.resize(simulated_scans.size());
+    float sum_of_similarities = 0.0f;
     /*
      * TODO:
      * For each particle, calculate the similarity between its simulated scan and the real scan.
@@ -93,6 +106,38 @@ std::vector<float> calculate_particle_similarities(std::vector<sensor_msgs::Lase
 
     /*
      */
+    for (size_t i = 0; i < simulated_scans.size(); ++i) {
+        float similarity = 0.0f;
+        int valid_readings = 0;
+
+        for (size_t j = 0; j < simulated_scans[i].ranges.size(); ++j) {
+            size_t index = j * downsampling;
+            // Asegurar que el índice no exceda el tamaño del escaneo real
+            if (index < real_scan.ranges.size()) {
+                float simulated_range = simulated_scans[i].ranges[j];
+                float real_range = real_scan.ranges[index];
+
+                if (std::isfinite(simulated_range) && std::isfinite(real_range)) {
+                    float range_difference = simulated_range - real_range;
+                    similarity += std::exp(-(range_difference * range_difference) / (2 * sigma2));
+                    valid_readings++;
+                }
+            }
+        }
+
+        // Prevenir la division por cero 
+        if (valid_readings > 0) {
+            similarities[i] = similarity / valid_readings; // Promedio de similitud
+            sum_of_similarities += similarities[i];
+        }
+    }
+
+    // Normalizar las similitudes para que sumen 1
+    if (sum_of_similarities > 0.0f) {
+        for (float& s : similarities) {
+            s /= sum_of_similarities;
+        }
+    }
     return similarities;
 }
 
@@ -106,8 +151,17 @@ int random_choice(std::vector<float>& probabilities)
      * Probability of picking an integer 'i' is given by the corresponding probabilities[i] value.
      * Return the chosen integer. 
      */
-    
-    return -1;
+    float random_threshold = rnd.uniformReal(0.0, 1.0);
+    float cumulative_probability = 0.0;
+
+    for (size_t i = 0; i < probabilities.size(); ++i) {
+        cumulative_probability += probabilities[i];
+        if (cumulative_probability >= random_threshold) {
+            return i;
+        }
+    }
+
+    return probabilities.size() - 1;
 }
 
 std::vector<geometry_msgs::Pose2D> resample_particles(std::vector<geometry_msgs::Pose2D>& particles,
@@ -125,8 +179,23 @@ std::vector<geometry_msgs::Pose2D> resample_particles(std::vector<geometry_msgs:
     
     /*
      */
+    for (size_t i = 0; i < particles.size(); ++i) {
+        int chosen_index = random_choice(probabilities);
+        // Directamente crear un nuevo objeto de tipo Pose2D
+        geometry_msgs::Pose2D new_particle;
+
+        // Asignar valores a new_particle, añadiendo ruido gaussiano
+        new_particle.x = particles[chosen_index].x + rnd.gaussian(0.0, sigma2);
+        new_particle.y = particles[chosen_index].y + rnd.gaussian(0.0, sigma2);
+        new_particle.theta = particles[chosen_index].theta + rnd.gaussian(0.0, sigma2);
+
+        // Añadir la nueva partícula al vector de partículas remuestreadas
+        resampled_particles[i] = new_particle;
+    }
+
     return resampled_particles;
 }
+
 
 geometry_msgs::Pose2D get_robot_odometry()
 {
@@ -233,10 +302,12 @@ int main(int argc, char** argv)
     float init_max_x;
     float init_max_y;
     float init_max_a;
+    int cont_iteraciones = 0;
     int laser_downsampling;
     float sigma2_sensor;
     float sigma2_movement;
     float sigma2_resampling;
+    const int MAX_ITERACIONES = 10;
     ros::param::param<int>  ("~N", N_particles, 100);
     ros::param::param<float>("~minX", init_min_x, 1.0);
     ros::param::param<float>("~minY", init_min_y, -2.0);
@@ -268,6 +339,7 @@ int main(int argc, char** argv)
     std::cout << "Real Scan Info: Number of readings: " << real_scan.ranges.size() << std::endl;
     std::cout << "Min angle: " << real_scan.angle_min << std::endl;
     std::cout << "Angle increment: " << real_scan.angle_increment << std::endl;
+    std::cout << "Iteración: " << cont_iteraciones << std::endl;
     geometry_msgs::Pose2D delta_pose;
     check_displacement(delta_pose);
 
@@ -277,7 +349,7 @@ int main(int argc, char** argv)
     
     particles = get_initial_distribution(N_particles, init_min_x, init_max_x, init_min_y, init_max_y, init_min_a, init_max_a);
     tf::Transform map_to_odom = calculate_and_publish_estimated_pose(particles, &pub_particles);
-    while(ros::ok())
+    while(ros::ok()  && cont_iteraciones < MAX_ITERACIONES )
     {
         if(check_displacement(delta_pose))
         {
@@ -293,7 +365,17 @@ int main(int argc, char** argv)
     
             /*
              */
+            move_particles(particles, delta_pose.x, delta_pose.y, delta_pose.theta, sigma2_movement);
+	        simulated_scans = simulate_particle_scans(particles, static_map, sensor_specs);
+            similarities = calculate_particle_similarities(simulated_scans, real_scan, laser_downsampling, sigma2_sensor);
+            particles = resample_particles(particles, similarities, sigma2_resampling);
+             cont_iteraciones++;
             map_to_odom = calculate_and_publish_estimated_pose(particles, &pub_particles);
+            std::cout << "Iteración completa: " << cont_iteraciones << std::endl;
+        }
+         if (cont_iteraciones >= MAX_ITERACIONES) {
+            std::cout << "Se alcanzó el máximo número de iteraciones sin lograr localización exitosa." << std::endl;
+            break; // Sale del ciclo si se alcanza el máximo de iteraciones.
         }
         broadcaster.sendTransform(tf::StampedTransform(map_to_odom, ros::Time::now(), "map", "odom"));
         ros::spinOnce();
