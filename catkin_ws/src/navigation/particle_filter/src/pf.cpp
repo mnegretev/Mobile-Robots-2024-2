@@ -18,7 +18,7 @@ std::vector<geometry_msgs::Pose2D> get_initial_distribution(int N, float min_x, 
                                                              float min_a, float max_a)
 {
     random_numbers::RandomNumberGenerator rnd;
-    std::vector<geometry_msgs::Pose2D> particles();
+    std::vector<geometry_msgs::Pose2D> particles;
 
     for (int i = 0; i < N; i++)
     {
@@ -81,9 +81,9 @@ std::vector<float> calculate_particle_similarities(std::vector<sensor_msgs::Lase
     }
 
     float sum = 0;
-    for (int i = 0; i < similarities.size(); i++)
+    for (size_t i = 0; i < similarities.size(); i++)
         sum += similarities[i];
-    for (int i = 0; i < similarities.size(); i++)
+    for (size_t i = 0; i < similarities.size(); i++)
         similarities[i] /= sum;
 
     return similarities;
@@ -93,7 +93,7 @@ int random_choice(std::vector<float> &probabilities)
 {
     random_numbers::RandomNumberGenerator rnd;
     float beta = rnd.uniformReal(0, 1);
-    for (int i = 0; i < probabilities.size(); i++)
+    for (size_t i = 0; i < probabilities.size(); i++)
     {
         if (beta < probabilities[i])
             return i;
@@ -109,7 +109,7 @@ std::vector<geometry_msgs::Pose2D> resample_particles(std::vector<geometry_msgs:
     random_numbers::RandomNumberGenerator rnd;
     std::vector<geometry_msgs::Pose2D> resampled_particles(particles.size());
 
-    for (int i = 0; i < particles.size(); i++)
+    for (size_t i = 0; i < particles.size(); i++)
     {
         int idx = random_choice(probabilities);
         resampled_particles[i].x = particles[idx].x + rnd.gaussian(0, sigma2);
