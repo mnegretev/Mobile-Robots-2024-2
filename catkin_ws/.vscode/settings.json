@@ -1,0 +1,12 @@
+{
+    "python.autoComplete.extraPaths": [
+        "/home/arrusr/Mobile-Robots-2024-2/catkin_ws/devel/lib/python3/dist-packages",
+        "/home/arrusr/ROSDev/robot_ws/devel/lib/python3/dist-packages",
+        "/opt/ros/noetic/lib/python3/dist-packages"
+    ],
+    "python.analysis.extraPaths": [
+        "/home/arrusr/Mobile-Robots-2024-2/catkin_ws/devel/lib/python3/dist-packages",
+        "/home/arrusr/ROSDev/robot_ws/devel/lib/python3/dist-packages",
+        "/opt/ros/noetic/lib/python3/dist-packages"
+    ]
+}
