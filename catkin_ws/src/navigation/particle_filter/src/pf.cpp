@@ -32,7 +32,12 @@ std::vector<geometry_msgs::Pose2D> get_initial_distribution(int N, float min_x, 
      * with positions uniformly distributed within bounding box given by min_x, ..., max_a.
      * To generate uniformly distributed random numbers, you can use the funcion rnd.uniformReal(min, max)
      */
-
+for (int i=0; i<N; i++)
+	{
+		particles[i].x = rnd.uniformReal(min_x, max_x);
+		particles[i].y = rnd.uniformReal(min_y, max_y);
+		particles[i].theta = rnd.uniformReal(min_a, max_a);
+	}
     /*
      */
     return particles;
@@ -50,7 +55,13 @@ void move_particles(std::vector<geometry_msgs::Pose2D>& particles, float delta_x
      * Add gaussian noise to each new position. Use sigma2 as variance.
      * You can use the function rnd.gaussian(mean, variance)
      */
-    
+    for (size_t i=0; i < particles.size(); i++)
+    {
+    	float t = particles[i].theta;
+    	particles[i].x += delta_x*cos(t) - delta_y*sin(t) + rnd.gaussian(0, sigma2);
+    	particles[i].y += delta_x*sin(t) - delta_y*cos(t) + rnd.gaussian(0, sigma2);
+    	particles[i].theta += delta_t + rnd.gaussian(0, sigma2);
+    }
 }
 
 std::vector<sensor_msgs::LaserScan> simulate_particle_scans(std::vector<geometry_msgs::Pose2D>& particles,
@@ -90,7 +101,22 @@ std::vector<float> calculate_particle_similarities(std::vector<sensor_msgs::Lase
      * IMPORTANT NOTE 2. Both, simulated an real scans, can have infinite distances. Thus, when comparing readings,
      * ensure both simulated and real ranges are finite values. 
      */
-
+for (size_t i=0; i < simulated_scans.size(); i++)
+     {
+     	float mean_diff = 0;
+     	for (size_t j=0; j < simulated_scans[i].ranges.size(); j++)
+     		if(real_scan.ranges[j*downsampling] < real_scan.range_max && simulated_scans[i].ranges[j] < real_scan.range_max)
+     			mean_diff += fabs(simulated_scans[i].ranges[j] - real_scan.ranges[j*downsampling]);
+     		else
+     			mean_diff += real_scan.range_max;
+     	mean_diff /= simulated_scans[i].ranges.size();
+     	similarities[i] = exp(-mean_diff * mean_diff / sigma2);
+     }
+     double sum = 0;
+     for (int i=0; i < similarities.size(); i++)
+     	sum += similarities[i];
+     for (int i=0; i < similarities.size(); i++)
+     	similarities[i] /= sum;
     /*
      */
     return similarities;
@@ -106,7 +132,12 @@ int random_choice(std::vector<float>& probabilities)
      * Probability of picking an integer 'i' is given by the corresponding probabilities[i] value.
      * Return the chosen integer. 
      */
-    
+    float beta = rnd.uniformReal(0, 1);
+    for(int i=0; i < probabilities.size(); i++)
+    	if (beta < probabilities[i])
+    		return i;
+    	else 
+    		beta -= probabilities[i];
     return -1;
 }
 
@@ -122,7 +153,13 @@ std::vector<geometry_msgs::Pose2D> resample_particles(std::vector<geometry_msgs:
      * Use the random_choice function to pick a particle with the correct probability.
      * Add gaussian noise to each sampled particle (add noise to x,y and theta). Use sigma2 as noise variance.
      */
-    
+    for(int i=0; i < particles.size(); i++)
+    {
+    	int idx = random_choice(probabilities);
+    	resampled_particles[i].x = particles[idx].x + rnd.gaussian(0, sigma2);
+    	resampled_particles[i].y = particles[idx].y + rnd.gaussian(0, sigma2);
+    	resampled_particles[i].theta = particles[idx].theta + rnd.gaussian(0, sigma2);
+    }
     /*
      */
     return resampled_particles;
@@ -290,7 +327,10 @@ int main(int argc, char** argv)
              * Get the set of similarities by calling the calculate_particle_similarities function
              * Resample particles by calling the resample_particles function
              */
-    
+    move_particles (particles, delta_pose.x, delta_pose.y, delta_pose.theta, sigma2_movement);
+             simulated_scans = simulate_particle_scans(particles, static_map, sensor_specs);
+             similarities = calculate_particle_similarities(simulated_scans, real_scan, laser_downsampling, sigma2_sensor);
+             particles = resample_particles(particles, similarities, sigma2_resampling);
             /*
              */
             map_to_odom = calculate_and_publish_estimated_pose(particles, &pub_particles);
