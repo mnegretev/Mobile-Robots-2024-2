@@ -151,9 +151,13 @@ def main():
     rospy.init_node("nn_training")
     rospack = rospkg.RosPack()
     dataset_folder = rospack.get_path("neural_network") + "/handwritten_digits/"
-    epochs        = 3
-    batch_size    = 10
-    learning_rate = 3.0
+    #epochs        = 3
+    #batch_size    = 10
+    #learning_rate = 3.0
+    pruebas=0
+    hits = 0
+    nohits=0
+    cmd = 0
     
     if rospy.has_param("~epochs"):
         epochs = rospy.get_param("~epochs")
@@ -172,21 +176,52 @@ def main():
     except:
         nn = NeuralNetwork([784,30,10])
         pass
+            #calcular las 64 pruebas
+    for learning_rate in [0.5,1.0,3.0,10.0]:
+        if cmd == 27 or rospy.is_shutdown():
+            break 
+        for epochs in [3,10,50,100]:
+            if cmd == 27 or rospy.is_shutdown():
+                break
+            for batch_size in [5,10,30,100]:
+                print("Tasa de aprendizaje ="+str(learning_rate))
+                print("Epocas ="+str(epochs))
+                print("Tamaño de lote ="+str(batch_size))
+                #Calcular tiempo 
+                nn.train_by_SGD(training_dataset, epochs, batch_size, learning_rate)
+                #numpy.savez(dataset_folder + "network",w=nn.weights, b=nn.biases)
+                print("\nPress key to test network or ESC to exit...")
+                numpy.set_printoptions(formatter={'float_kind':"{:.3f}".format})
+                hits = 0
+                nohits = 0
+                cmd = cv2.waitKey(0)
+                if cmd == 27 or rospy.is_shutdown():
+                    break
+                #Realizar 100 iteraciones
+                start_time = rospy.Time.now()
+                for i in range (100):
+                #    while cmd != 27 and not rospy.is_shutdown():
+                    img,label = testing_dataset[numpy.random.randint(0, 4999)]
+                    y = nn.feedforward(img).transpose()
+                    print("\nPerceptron output: " + str(y))
+                    print("Expected output  : "   + str(label.transpose()))
+                    print("Recognized digit : "   + str(numpy.argmax(y)))
+                    cv2.imshow("Digit", numpy.reshape(numpy.asarray(img, dtype="float32"), (28,28,1)))
+                    expected = numpy.argmax(label.transpose())
+                    recognized = numpy.argmax(y)
+                    if expected == recognized:
+                        hits +=1
+                    elif (expected != recognized):
+                        nohits+=1
+                print("Pruebas exitosas: " + str(hits))
+                print("Pruebas no exitosas: " + str(nohits))
+                
+                end_time = rospy.Time.now()
+                print("Tiempo de entrenamiento:"+str(1000*(end_time-start_time).to_sec())+" ms")
+                pruebas+=1
+    print(f"Total de iteraciones = {pruebas}") 
     
-    nn.train_by_SGD(training_dataset, epochs, batch_size, learning_rate)
-    #numpy.savez(dataset_folder + "network",w=nn.weights, b=nn.biases)
-    
-    print("\nPress key to test network or ESC to exit...")
-    numpy.set_printoptions(formatter={'float_kind':"{:.3f}".format})
-    cmd = cv2.waitKey(0)
-    while cmd != 27 and not rospy.is_shutdown():
-        img,label = testing_dataset[numpy.random.randint(0, 4999)]
-        y = nn.feedforward(img).transpose()
-        print("\nPerceptron output: " + str(y))
-        print("Expected output  : "   + str(label.transpose()))
-        print("Recognized digit : "   + str(numpy.argmax(y)))
-        cv2.imshow("Digit", numpy.reshape(numpy.asarray(img, dtype="float32"), (28,28,1)))
-        cmd = cv2.waitKey(0)
+
     
 
 if __name__ == '__main__':
