@@ -187,8 +187,11 @@ def main():
                 print("Tasa de aprendizaje ="+str(learning_rate))
                 print("Epocas ="+str(epochs))
                 print("Tamaño de lote ="+str(batch_size))
-                #Calcular tiempo 
+                #Calcular tiempo
+                start_time = rospy.Time.now() 
                 nn.train_by_SGD(training_dataset, epochs, batch_size, learning_rate)
+                end_time = rospy.Time.now()
+                print("Tiempo de entrenamiento:"+str(1000*(end_time-start_time).to_sec())+" ms")
                 #numpy.savez(dataset_folder + "network",w=nn.weights, b=nn.biases)
                 print("\nPress key to test network or ESC to exit...")
                 numpy.set_printoptions(formatter={'float_kind':"{:.3f}".format})
@@ -198,7 +201,6 @@ def main():
                 if cmd == 27 or rospy.is_shutdown():
                     break
                 #Realizar 100 iteraciones
-                start_time = rospy.Time.now()
                 for i in range (100):
                 #    while cmd != 27 and not rospy.is_shutdown():
                     img,label = testing_dataset[numpy.random.randint(0, 4999)]
@@ -215,9 +217,6 @@ def main():
                         nohits+=1
                 print("Pruebas exitosas: " + str(hits))
                 print("Pruebas no exitosas: " + str(nohits))
-                
-                end_time = rospy.Time.now()
-                print("Tiempo de entrenamiento:"+str(1000*(end_time-start_time).to_sec())+" ms")
                 pruebas+=1
     print(f"Total de iteraciones = {pruebas}") 
     
