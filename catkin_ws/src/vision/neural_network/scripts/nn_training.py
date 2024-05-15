@@ -14,7 +14,7 @@ import numpy
 import rospy
 import rospkg
 
-NAME = "FULL_NAME"
+NAME = "LUNA COLMENARES MIGUEL ANGEL"
 
 class NeuralNetwork(object):
     def __init__(self, layers, weights=None, biases=None):
@@ -49,10 +49,14 @@ class NeuralNetwork(object):
         # return a list containing the output of each layer, from input to output.
         # Include input x as the first output.
         #
-        
+        y.append(x)
+        for i in range(len(self.biases)):
+            u= numpy.dot(self.weights[i],x) + self.biases[i]
+            x= 1.0 / (1.0 + numpy.exp(-u))
+            y.append(x)
         return y
 
-    def backpropagate(self, x, yt):
+    def backpropagate(self, x, t):
         y = self.feedforward_verbose(x)
         nabla_b = [numpy.zeros(b.shape) for b in self.biases]
         nabla_w = [numpy.zeros(w.shape) for w in self.weights]
@@ -73,8 +77,13 @@ class NeuralNetwork(object):
         #     nabla_b[-l] = delta
         #     nabla_w[-l] = delta*ylpT  where ylpT is the transpose of outputs vector of layer l-1
         #
-        
-        
+        delta=(y[-1] - t)*y[-1]*(1-y[-1])
+        nabla_w[-1]=delta*y[-2].T
+        nabla_b[-1]=delta
+        for i in range(2,self.num_layers):
+            delta = numpy.dot(self.weights[-i+1].T,delta)*y[-i]*(1-y[-i])
+            nabla_w[-i]= delta*y[-i-1].T
+            nabla_b[-i]= delta
         return nabla_w, nabla_b
 
     def update_with_batch(self, batch, eta):
