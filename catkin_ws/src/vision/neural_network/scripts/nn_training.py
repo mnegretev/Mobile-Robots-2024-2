@@ -104,19 +104,24 @@ def load_dataset(folder):
         testing_labels   += [label for j in range(len(images)//2)]
     return list(zip(training_dataset, training_labels)), list(zip(testing_dataset, testing_labels))
 
-def test_network(nn, testing_dataset):
+def test_network(nn, testing_dataset, num_tests=500):
     total_samples = len(testing_dataset)
-    correct_predictions = 0
-    for img, label in testing_dataset:
-        y = nn.feedforward(img)
-        expected = np.argmax(label)
-        recognized = np.argmax(y)
-        if expected == recognized:
-            correct_predictions += 1
-    print("Correct predictions:", correct_predictions)  # Nuevo print para depurar
-    print("Total samples:", total_samples)  # Nuevo print para depurar
-    accuracy = (correct_predictions / total_samples) * 100
-    return accuracy
+    total_accuracy = 0
+    for _ in range(num_tests):
+        correct_predictions = 0
+        for img, label in testing_dataset:
+            y = nn.feedforward(img)
+            expected = np.argmax(label)
+            recognized = np.argmax(y)
+            if expected == recognized:
+                correct_predictions += 1
+        accuracy = (correct_predictions / total_samples) * 100
+        total_accuracy += accuracy
+    # Imprimimos el número de pruebas y predicciones correctas
+    print("Number of tests:", num_tests)
+    print("Correct predictions:", correct_predictions)
+    average_accuracy = total_accuracy / num_tests
+    return average_accuracy
 
 def main():
     print("TRAINING A NEURAL NETWORK - Roberto C")
