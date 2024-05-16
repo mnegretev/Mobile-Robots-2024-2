@@ -9,7 +9,7 @@ import rospkg
 import time
 import itertools
 
-NAME = "FULL_NAME"
+NAME = "Roberto Camacho"
 
 class NeuralNetwork(object):
     def __init__(self, layers, weights=None, biases=None):
@@ -164,7 +164,6 @@ def main():
             print(f"    An error occurred: {str(e)}\n")
 
     print(f"Total number of combinations: {combination_count}")
-    print(f"Results saved to: {results_file}")
 
 if __name__ == "__main__":
     main()
