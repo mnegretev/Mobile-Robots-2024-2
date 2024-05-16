@@ -1,104 +1,80 @@
 #!/usr/bin/env python3
-#
-# MOBILE ROBOTS - FI-UNAM, 2024-2
-# TRAINING A NEURAL NETWORK
-#
-# Instructions:
-# Complete the code to train a neural network for
-# handwritten digits recognition.
-#
+
 import cv2
 import sys
 import random
-import numpy
+import numpy as np
 import rospy
 import rospkg
+import time
+import itertools
 
 NAME = "FULL_NAME"
 
 class NeuralNetwork(object):
     def __init__(self, layers, weights=None, biases=None):
-        #
-        # The list 'layers' indicates the number of neurons in each layer.
-        # Remember that the first layer indicates the dimension of the inputs and thus,
-        # there is no bias vector fot the first layer.
-        # For this practice, 'layers' should be something like [784, n2, n3, ..., nl, 10]
-        # All weights and biases are initialized with random values. In each layer we have a matrix
-        # of weights where row j contains all the weights of the j-th neuron in that layer. For this example,
-        # the first matrix should be of order n2 x 784 and last matrix should be 10 x nl.
-        #
-        self.num_layers  = len(layers)
+        if layers[0] != 784:
+            raise ValueError("First layer size should match input image size (784)")
+
+        self.num_layers = len(layers)
         self.layer_sizes = layers
-        self.biases =[numpy.random.randn(y,1) for y in layers[1:]] if biases == None else biases
-        self.weights=[numpy.random.randn(y,x) for x,y in zip(layers[:-1],layers[1:])] if weights==None else weights
+        self.biases = [np.random.randn(y, 1) for y in layers[1:]] if biases is None else biases
+        self.weights = [
+            np.random.randn(y, x) for x, y in zip(layers[:-1], layers[1:])
+        ] if weights is None else weights
         
     def feedforward(self, x):
-        #
-        # This function gets the output of the network when input is 'x'.
-        #
         for i in range(len(self.biases)):
-            z = numpy.dot(self.weights[i], x) + self.biases[i]
-            x = 1.0 / (1.0 + numpy.exp(-z))  #output of the current layer is the input of the next one
+            z = np.dot(self.weights[i], x) + self.biases[i]
+            x = 1.0 / (1.0 + np.exp(-z))
         return x
 
     def feedforward_verbose(self, x):
-        y = []
-        #
-        # TODO:
-        # Write a function similar to 'feedforward' but instead of returning only the output layer,
-        # return a list containing the output of each layer, from input to output.
-        # Include input x as the first output.
-        #
-        
-        return y
+        outputs = [x]
+        for i in range(len(self.biases)):
+            z = np.dot(self.weights[i], x) + self.biases[i]
+            x = 1.0 / (1.0 + np.exp(-z))
+            outputs.append(x)
+        return outputs
 
     def backpropagate(self, x, yt):
-        y = self.feedforward_verbose(x)
-        nabla_b = [numpy.zeros(b.shape) for b in self.biases]
-        nabla_w = [numpy.zeros(w.shape) for w in self.weights]
-        # TODO:
-        # Return a tuple [nabla_w, nabla_b] containing the gradient of cost function C with respect to
-        # each weight and bias of all the network. The gradient is calculated assuming only one training
-        # example is given: the input 'x' and the corresponding label 'yt'.
-        # nabla_w and nabla_b should have the same dimensions as the corresponding
-        # self.weights and self.biases
-        # You can calculate the gradient following these steps:
-        #
-        # Calculate delta for the output layer L: delta=(yL-yt)*yL*(1-yL)
-        # nabla_b of output layer = delta      
-        # nabla_w of output layer = delta*yLpT where yLpT is the transpose of the ouput vector of layer L-1
-        # FOR all layers 'l' from L-1 to input layer: 
-        #     delta = (WT * delta)*yl*(1 - yl)
-        #     where 'WT' is the transpose of the matrix of weights of layer l+1 and 'yl' is the output of layer l
-        #     nabla_b[-l] = delta
-        #     nabla_w[-l] = delta*ylpT  where ylpT is the transpose of outputs vector of layer l-1
-        #
-        
-        
-        return nabla_w, nabla_b
+        delta = (yt - self.feedforward(x)) * self.feedforward(x) * (1 - self.feedforward(x))
+        nabla_b = [delta]
+        nabla_w = [np.dot(delta, x.T)]
+
+        for l in range(len(self.biases) - 2, -1, -1):
+            y = self.feedforward_verbose(x)[l + 1]
+            delta = np.dot(self.weights[l + 1].T, delta) * y * (1 - y)
+            nabla_b.append(delta)
+                
+            nabla_w.append(np.dot(delta, self.feedforward_verbose(x)[l].T))
+
+        return nabla_w[::-1], nabla_b[::-1]
 
     def update_with_batch(self, batch, eta):
-        #
-        # This function exectutes gradient descend for the subset of examples
-        # given by 'batch' with learning rate 'eta'
-        # 'batch' is a list of training examples [(x,y), ..., (x,y)]
-        #
-        nabla_b = [numpy.zeros(b.shape) for b in self.biases]
-        nabla_w = [numpy.zeros(w.shape) for w in self.weights]
+        # Update weights and biases using batch gradient descent
+        nabla_w = [np.zeros(w.shape) for w in self.weights]
+        nabla_b = [np.zeros(b.shape) for b in self.biases]
         M = len(batch)
-        for x,y in batch:
+        for x, y in batch:
             if rospy.is_shutdown():
                 break
-            delta_nabla_w, delta_nabla_b = self.backpropagate(x,y)
-            nabla_w = [nw+dnw for nw,dnw in zip(nabla_w, delta_nabla_w)]
-            nabla_b = [nb+dnb for nb,dnb in zip(nabla_b, delta_nabla_b)]
-        self.weights = [w-eta*nw/M for w,nw in zip(self.weights, nabla_w)]
-        self.biases  = [b-eta*nb/M for b,nb in zip(self.biases , nabla_b)]
+            delta_nabla_w, delta_nabla_b = self.backpropagate(x, y)
+
+            for i in range(len(nabla_w)):
+                # Ajustar la forma de delta_nabla_w si es necesario
+                if delta_nabla_w[i].shape != nabla_w[i].shape:
+                    delta_nabla_w[i] = delta_nabla_w[i][:nabla_w[i].shape[0], :nabla_w[i].shape[1]]
+                nabla_w[i] += delta_nabla_w[i]
+            nabla_b = [nb + dnb for nb, dnb in zip(nabla_b, delta_nabla_b)]
+
+        self.weights = [w - (eta / M) * nw for w, nw in zip(self.weights, nabla_w)]
+        self.biases = [b - (eta / M) * nb for b, nb in zip(self.biases, nabla_b)]
         return nabla_w, nabla_b
 
     def get_gradient_mag(self, nabla_w, nabla_b):
-        mag_w = sum([numpy.sum(n) for n in [nw*nw for nw in nabla_w]])
-        mag_b = sum([numpy.sum(b) for b in [nb*nb for nb in nabla_b]])
+        mag_w = sum([np.sum(n) for n in [nw*nw for nw in nabla_w]])
+        mag_b = sum([np.sum(b) for b in [nb*nb for nb in nabla_b]])
         return mag_w + mag_b
 
     def train_by_SGD(self, training_data, epochs, batch_size, eta):
@@ -112,10 +88,6 @@ class NeuralNetwork(object):
                 sys.stdout.write("\rGradient magnitude: %f            " % (self.get_gradient_mag(nabla_w, nabla_b)))
                 sys.stdout.flush()
             print("Epoch: " + str(j))
-    #
-    ### END OF CLASS
-    #
-
 
 def load_dataset(folder):
     print("Loading data set from " + folder)
@@ -124,56 +96,75 @@ def load_dataset(folder):
     training_dataset, training_labels, testing_dataset, testing_labels = [],[],[],[]
     for i in range(10):
         f_data = [c/255.0 for c in open(folder + "data" + str(i), "rb").read(784000)]
-        images = [numpy.asarray(f_data[784*j:784*(j+1)]).reshape([784,1]) for j in range(1000)]
-        label  = numpy.asarray([1 if i == j else 0 for j in range(10)]).reshape([10,1])
+        images = [np.asarray(f_data[784*j:784*(j+1)]).reshape([784,1]) for j in range(1000)]
+        label  = np.asarray([1 if i == j else 0 for j in range(10)]).reshape([10,1])
         training_dataset += images[0:len(images)//2]
         training_labels  += [label for j in range(len(images)//2)]
-        testing_dataset  += images[len(images)//2:len(images)]
+        testing_dataset  += images[len(images)//2:len(images)//2+50]  # Tomar solo las primeras 50 imágenes para el conjunto de prueba
         testing_labels   += [label for j in range(len(images)//2)]
     return list(zip(training_dataset, training_labels)), list(zip(testing_dataset, testing_labels))
 
+def test_network(nn, testing_dataset):
+    total_samples = len(testing_dataset)
+    correct_predictions = 0
+    for img, label in testing_dataset:
+        y = nn.feedforward(img)
+        expected = np.argmax(label)
+        recognized = np.argmax(y)
+        if expected == recognized:
+            correct_predictions += 1
+    print("Correct predictions:", correct_predictions)  # Nuevo print para depurar
+    print("Total samples:", total_samples)  # Nuevo print para depurar
+    accuracy = (correct_predictions / total_samples) * 100
+    return accuracy
+
 def main():
-    print("TRAINING A NEURAL NETWORK - " + NAME)
+    print("TRAINING A NEURAL NETWORK - Roberto C")
     rospy.init_node("nn_training")
     rospack = rospkg.RosPack()
     dataset_folder = rospack.get_path("neural_network") + "/handwritten_digits/"
-    epochs        = 3
-    batch_size    = 10
-    learning_rate = 3.0
     
-    if rospy.has_param("~epochs"):
-        epochs = rospy.get_param("~epochs")
-    if rospy.has_param("~batch_size"):
-        batch_size = rospy.get_param("~batch_size")
-    if rospy.has_param("~learning_rate"):
-        learning_rate = rospy.get_param("~learning_rate") 
+    # Definir los valores a probar para cada parámetro
+    learning_rates = [0.5, 1.0, 3.0, 10.0]
+    epochs_values = [3, 10, 50, 100]
+    batch_sizes = [5, 10, 30, 100]
 
-    training_dataset, testing_dataset = load_dataset(dataset_folder)
+    # Combinar cada elemento de las listas
+    combinations = itertools.product(learning_rates, epochs_values, batch_sizes)
     
-    try:
-        saved_data = numpy.load(dataset_folder+"network.npz",allow_pickle=True)
-        layers = [saved_data['w'][0].shape[1]] + [b.shape[0] for b in saved_data['b']]
-        nn = NeuralNetwork(layers, weights=saved_data['w'], biases=saved_data['b'])
-        print("Loading data from previously trained model with layers " + str(layers))
-    except:
-        nn = NeuralNetwork([784,30,10])
-        pass
-    
-    nn.train_by_SGD(training_dataset, epochs, batch_size, learning_rate)
-    #numpy.savez(dataset_folder + "network",w=nn.weights, b=nn.biases)
-    
-    print("\nPress key to test network or ESC to exit...")
-    numpy.set_printoptions(formatter={'float_kind':"{:.3f}".format})
-    cmd = cv2.waitKey(0)
-    while cmd != 27 and not rospy.is_shutdown():
-        img,label = testing_dataset[numpy.random.randint(0, 4999)]
-        y = nn.feedforward(img).transpose()
-        print("\nPerceptron output: " + str(y))
-        print("Expected output  : "   + str(label.transpose()))
-        print("Recognized digit : "   + str(numpy.argmax(y)))
-        cv2.imshow("Digit", numpy.reshape(numpy.asarray(img, dtype="float32"), (28,28,1)))
-        cmd = cv2.waitKey(0)
-    
+    combination_count = 0  # Contador para el número de combinaciones
 
-if __name__ == '__main__':
+    print("Starting experiments...\n")
+
+    # Realizar pruebas para cada combinación de parámetros
+    for learning_rate, epochs, batch_size in combinations:
+        combination_count += 1  # Incrementar el contador de combinaciones
+        print(f"Combination {combination_count}:")
+        print(f"    Training with learning rate: {learning_rate}, epochs: {epochs}, batch size: {batch_size}")
+        
+        try:
+            # Cargar conjunto de datos
+            training_dataset, testing_dataset = load_dataset(dataset_folder)
+            
+            # Crear instancia de la red neuronal
+            nn = NeuralNetwork([784, 30, 10])
+            
+            # Entrenar la red neuronal
+            start_time = time.time()
+            nn.train_by_SGD(training_dataset, epochs, batch_size, learning_rate)
+            end_time = time.time()
+            
+            # Realizar pruebas con la red neuronal entrenada
+            hits = test_network(nn, testing_dataset)
+            
+            print(f"    Average training time: {end_time - start_time:.2f} seconds")
+            print(f"    Average accuracy: {hits:.2f}%\n")  # Cambio en la impresión del porcentaje de precisión
+            
+        except Exception as e:
+            print(f"    An error occurred: {str(e)}\n")
+
+    print(f"Total number of combinations: {combination_count}")
+    print(f"Results saved to: {results_file}")
+
+if __name__ == "__main__":
     main()
