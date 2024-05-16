@@ -14,7 +14,7 @@ import numpy
 import rospy
 import rospkg
 
-NAME = "FULL_NAME"
+NAME = "ALVAREZ SANCHEZ CASANDRA ITZEL"
 
 class NeuralNetwork(object):
     def __init__(self, layers, weights=None, biases=None):
