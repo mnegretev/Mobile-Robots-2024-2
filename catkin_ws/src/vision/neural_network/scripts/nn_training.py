@@ -142,14 +142,14 @@ def load_dataset(folder):
         testing_labels   += [label for j in range(len(images)//2)]
     return list(zip(training_dataset, training_labels)), list(zip(testing_dataset, testing_labels))
 
-def main():
+def main(e, b, l):
     print("TRAINING A NEURAL NETWORK - " + NAME)
     rospy.init_node("nn_training")
     rospack = rospkg.RosPack()
     dataset_folder = rospack.get_path("neural_network") + "/handwritten_digits/"
-    epochs        = 3
-    batch_size    = 10
-    learning_rate = 3.0
+    epochs        = e
+    batch_size    = b
+    learning_rate = l
     
     if rospy.has_param("~epochs"):
         epochs = rospy.get_param("~epochs")
@@ -177,7 +177,7 @@ def main():
     
     print("\nPress key to test network or ESC to exit...")
     numpy.set_printoptions(formatter={'float_kind':"{:.3f}".format})
-    cmd = cv2.waitKey(0)
+    #cmd = cv2.waitKey(0)
     hits = 0
     for i in range (100):
     #while cmd != 27 and not rospy.is_shutdown():
@@ -193,6 +193,16 @@ def main():
         	hits += 1
         #cmd = cv2.waitKey(0)
     print ("Hits:" + str(hits))
-
+    print ("---------------------------------------------------------------------------------------")
 if __name__ == '__main__':
-    main()
+    tda = [0.5, 1.0, 3.0, 10.0]
+    nde = [3, 10, 50, 100]
+    tdl = [5, 10, 30, 100]
+    for i in range (4):
+    	for j in range (4):
+    		for k in range (4):
+    			print("Numero de epocas: " + str(nde[i]))
+    			print("Tamaño de Lote: " + str(tdl[j]))
+    			print("Tasa de Aprendizaje: " + str(tda[k]))
+    			print("----------------------------------------------------------------------------") 
+    			main(nde[i], tdl[j], tda[k])
