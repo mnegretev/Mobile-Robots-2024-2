@@ -56,7 +56,7 @@ class NeuralNetwork(object):
         	y.append(x)
         return y
 
-    def backpropagate(self, x, yt):
+    def backpropagate(self, x, t):
         y = self.feedforward_verbose(x)
         nabla_b = [numpy.zeros(b.shape) for b in self.biases]
         nabla_w = [numpy.zeros(w.shape) for w in self.weights]
@@ -86,7 +86,6 @@ class NeuralNetwork(object):
         	nabla_w[-i] = delta * y[-i - 1].T
         	nabla_b[-i] = delta
         return nabla_w, nabla_b
-        
 
     def update_with_batch(self, batch, eta):
         #
@@ -143,14 +142,14 @@ def load_dataset(folder):
         testing_labels   += [label for j in range(len(images)//2)]
     return list(zip(training_dataset, training_labels)), list(zip(testing_dataset, testing_labels))
 
-def main():
+def main(e, b, l):
     print("TRAINING A NEURAL NETWORK - " + NAME)
     rospy.init_node("nn_training")
     rospack = rospkg.RosPack()
     dataset_folder = rospack.get_path("neural_network") + "/handwritten_digits/"
-    epochs        = 3
-    batch_size    = 10
-    learning_rate = 3.0
+    epochs        = e
+    batch_size    = b
+    learning_rate = l
     
     if rospy.has_param("~epochs"):
         epochs = rospy.get_param("~epochs")
@@ -170,12 +169,15 @@ def main():
         nn = NeuralNetwork([784,30,10])
         pass
     
+    start_time = rospy.Time.now()
     nn.train_by_SGD(training_dataset, epochs, batch_size, learning_rate)
+    end_time = rospy.Time.now()
+    print("Training time: " + str(1000*(end_time - start_time).to_sec()) + "ms")
     #numpy.savez(dataset_folder + "network",w=nn.weights, b=nn.biases)
     
     print("\nPress key to test network or ESC to exit...")
     numpy.set_printoptions(formatter={'float_kind':"{:.3f}".format})
-    cmd = cv2.waitKey(0)
+    #cmd = cv2.waitKey(0)
     hits = 0
     for i in range (100):
     #while cmd != 27 and not rospy.is_shutdown():
@@ -191,7 +193,16 @@ def main():
         	hits += 1
         #cmd = cv2.waitKey(0)
     print ("Hits:" + str(hits))
-    
-
+    print ("---------------------------------------------------------------------------------------")
 if __name__ == '__main__':
-    main()
+    tda = [0.5, 1.0, 3.0, 10.0]
+    nde = [3, 10, 50, 100]
+    tdl = [5, 10, 30, 100]
+    for i in range (4):
+    	for j in range (4):
+    		for k in range (4):
+    			print("Numero de epocas: " + str(nde[i]))
+    			print("Tamaño de Lote: " + str(tdl[j]))
+    			print("Tasa de Aprendizaje: " + str(tda[k]))
+    			print("----------------------------------------------------------------------------") 
+    			main(nde[i], tdl[j], tda[k])
