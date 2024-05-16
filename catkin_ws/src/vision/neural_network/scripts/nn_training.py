@@ -14,7 +14,7 @@ import numpy
 import rospy
 import rospkg
 
-NAME = "FULL_NAME"
+NAME = "Guzmán Vázquez Alan Ernesto"
 
 class NeuralNetwork(object):
     def __init__(self, layers, weights=None, biases=None):
@@ -49,6 +49,11 @@ class NeuralNetwork(object):
         # return a list containing the output of each layer, from input to output.
         # Include input x as the first output.
         #
+        y.append(x)
+        for i in range(len(self.biases)):
+            u = numpy.dot(self.weights[i],x) + self.biases[i]
+            x = 1.0 / (1.0 + numpy.exp(-u))
+            y.append(x)
         
         return y
 
@@ -73,7 +78,14 @@ class NeuralNetwork(object):
         #     nabla_b[-l] = delta
         #     nabla_w[-l] = delta*ylpT  where ylpT is the transpose of outputs vector of layer l-1
         #
-        
+        delta = (y[-1]-yt)*y[-1]*(1-y[-1])
+        nabla_w[-1] = delta*y[-2].transpose()
+        nabla_b[-1] = delta
+        for i in range(2, self.num_layers):
+            delta = numpy.dot(self.weights[-i+1].transpose(), delta)*y[-i]*(1-y[-i])
+            nabla_b[-i] = delta
+            nabla_w[-i] = delta*y[-i-1].transpose()
+         
         
         return nabla_w, nabla_b
 
@@ -137,10 +149,11 @@ def main():
     rospy.init_node("nn_training")
     rospack = rospkg.RosPack()
     dataset_folder = rospack.get_path("neural_network") + "/handwritten_digits/"
-    epochs        = 3
-    batch_size    = 10
-    learning_rate = 3.0
-    
+    #epochs        = 3
+    #batch_size    = 10
+    #learning_rate = 3.0
+    cmd = 0
+    prueba = 0
     if rospy.has_param("~epochs"):
         epochs = rospy.get_param("~epochs")
     if rospy.has_param("~batch_size"):
@@ -158,22 +171,65 @@ def main():
     except:
         nn = NeuralNetwork([784,30,10])
         pass
+    #Inicialización de archivo de resultados
+    results = open("Results.txt", "w")
+
+    #Entrenamiento con diferentes parámetros
+    for epochs in [3,10,50,100]:
+        if cmd == 27 or rospy.is_shutdown():
+            break
+
+        for batch_size in [5,10,30,100]:        
+            if cmd == 27 or rospy.is_shutdown():
+                break
+
+            for learning_rate in [0.5,1.0,3.0,10.0]:
+                if cmd == 27 or rospy.is_shutdown():
+                    break
+                
+                start_time = rospy.Time.now()
+                nn.train_by_SGD(training_dataset, epochs, batch_size, learning_rate)
+                #numpy.savez(dataset_folder + "network",w=nn.weights, b=nn.biases)
+                end_time = rospy.Time.now()
+                hits = 0
+                #print("\nPress key to test network or ESC to exit...")
+                numpy.set_printoptions(formatter={'float_kind':"{:.3f}".format})
+                #cmd = cv2.waitKey(0)
+
+                #Realiza 100 prueba a la red neuronal
+                for i in range(100):
+                #while cmd != 27 and not rospy.is_shutdown():
+                    img,label = testing_dataset[numpy.random.randint(0, 4999)]
+                    y = nn.feedforward(img).transpose()
+                    print("\nPerceptron output: " + str(y))
+                    print("Expected output  : "   + str(label.transpose()))
+                    print("Recognized digit : "   + str(numpy.argmax(y)))
+                    cv2.imshow("Digit", numpy.reshape(numpy.asarray(img, dtype="float32"), (28,28,1)))
+                    #Expected and recognized
+                    expected = numpy.argmax(label.transpose())
+                    recognized = numpy.argmax(y)
+                    #Cada vez que expected y recognized sean iguales significa si se reconoció el digito
+                    if expected == recognized:
+                        hits += 1
+                    #cmd = cv2.waitKey(0)
+                prueba += 1
+                print("Prueba #" + str(prueba))
+                print("Numero de aciertos:" + str(hits))
+                print("Tiempo de entrenamiento:"+str((end_time-start_time).to_sec())+"[s]")
+                
+                time = (end_time - start_time).to_sec()
+
+                results.write("Prueba #%d " %prueba)
+                results.write("Epochs = %d " %epochs)
+                results.write("Batch size = %d " %batch_size)
+                results.write("Learning rate = %d\n" %learning_rate)
+                results.write("Número de aciertos = %d\n" %hits)
+                results.write("Tiempo de entrenamiento = %f [s]\n" %time)
     
-    nn.train_by_SGD(training_dataset, epochs, batch_size, learning_rate)
-    #numpy.savez(dataset_folder + "network",w=nn.weights, b=nn.biases)
-    
-    print("\nPress key to test network or ESC to exit...")
-    numpy.set_printoptions(formatter={'float_kind':"{:.3f}".format})
+    #El archivo de resultado es guardado en Mobile-Robots-2024-2
+    results.close()
+    print("\nProceso finalizado! :D")
     cmd = cv2.waitKey(0)
-    while cmd != 27 and not rospy.is_shutdown():
-        img,label = testing_dataset[numpy.random.randint(0, 4999)]
-        y = nn.feedforward(img).transpose()
-        print("\nPerceptron output: " + str(y))
-        print("Expected output  : "   + str(label.transpose()))
-        print("Recognized digit : "   + str(numpy.argmax(y)))
-        cv2.imshow("Digit", numpy.reshape(numpy.asarray(img, dtype="float32"), (28,28,1)))
-        cmd = cv2.waitKey(0)
-    
 
 if __name__ == '__main__':
     main()
