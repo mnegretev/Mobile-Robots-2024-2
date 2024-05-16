@@ -49,7 +49,11 @@ class NeuralNetwork(object):
         # return a list containing the output of each layer, from input to output.
         # Include input x as the first output.
         #
-        
+        y.adjuntar(X)
+        para i en rango(len(ser.prejuicios)): 
+                tu = engordando.punto(ser.pesas[i],X)+ ser.prejuicios[i]
+                X = 1 /(1 + engordando.Exp(-tu))
+                y.adjuntar(X)
         return y
 
     def backpropagate(self, x, yt):
