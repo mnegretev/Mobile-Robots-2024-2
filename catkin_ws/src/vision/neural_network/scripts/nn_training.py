@@ -14,7 +14,7 @@ import numpy
 import rospy
 import rospkg
 
-NAME = "FULL_NAME"
+NAME = "Silva Gonzalez Yamile Citlalli"
 
 class NeuralNetwork(object):
     def __init__(self, layers, weights=None, biases=None):
@@ -49,10 +49,14 @@ class NeuralNetwork(object):
         # return a list containing the output of each layer, from input to output.
         # Include input x as the first output.
         #
-        
+        y.append(x)
+        for i in range(len(self.biases)):
+        	u = numpy.dot(self.weights[i], x) + self.biases[i]
+        	x = 1 / (1 + numpy.exp(-u))
+        	y.append(x)
         return y
 
-    def backpropagate(self, x, yt):
+    def backpropagate(self, x, t):
         y = self.feedforward_verbose(x)
         nabla_b = [numpy.zeros(b.shape) for b in self.biases]
         nabla_w = [numpy.zeros(w.shape) for w in self.weights]
@@ -73,8 +77,14 @@ class NeuralNetwork(object):
         #     nabla_b[-l] = delta
         #     nabla_w[-l] = delta*ylpT  where ylpT is the transpose of outputs vector of layer l-1
         #
+        delta = (y[-1] - t) * y[-1] * (1-y[-1])
+        nabla_w[-1] = delta * y[-2].transpose()
+        nabla_b[-1] = delta
         
-        
+        for i in range(2, self.num_layers):
+        	delta = numpy.dot(self.weights[-i + 1].transpose(), delta) * y[-i] * (1 - y[-i])
+        	nabla_w[-i] = delta * y[-i - 1].transpose()
+        	nabla_b[-i] = delta
         return nabla_w, nabla_b
 
     def update_with_batch(self, batch, eta):
@@ -137,9 +147,9 @@ def main():
     rospy.init_node("nn_training")
     rospack = rospkg.RosPack()
     dataset_folder = rospack.get_path("neural_network") + "/handwritten_digits/"
-    epochs        = 3
-    batch_size    = 10
-    learning_rate = 3.0
+    
+    cmd = 0
+    p = 0
     
     if rospy.has_param("~epochs"):
         epochs = rospy.get_param("~epochs")
@@ -158,21 +168,58 @@ def main():
     except:
         nn = NeuralNetwork([784,30,10])
         pass
+        
+    resultados = open("Resultados.txt", "w")
+        
+    #Parametros...
+    for epochs in [3,10,50,100]:
+    	if cmd == 27 or rospy.is_shutdown():
+    		break
+    	for batch_size in [5,10,30,100]:
+    		if cmd == 27 or rospy.is_shutdown():
+    			break
+    		for learning_rate in [0.5,1,3,10]:
+    			if cmd == 27 or rospy.is_shutdown():
+    				break
+    	
+    		start_time = rospy.Time.now()
+    		nn.train_by_SGD(training_dataset, epochs, batch_size, learning_rate)
+    		end_time = rospy.Time.now()
+    		hits = 0
+    		numpy.set_printoptions(formatter={'float_kind':"{:.3f}".format})
     
-    nn.train_by_SGD(training_dataset, epochs, batch_size, learning_rate)
-    #numpy.savez(dataset_folder + "network",w=nn.weights, b=nn.biases)
     
-    print("\nPress key to test network or ESC to exit...")
-    numpy.set_printoptions(formatter={'float_kind':"{:.3f}".format})
+    		#numpy.savez(dataset_folder + "network",w=nn.weights, b=nn.biases)
+    		#print("\nPress key to test network or ESC to exit...")
+    		#cmd = cv2.waitKey(0)
+    		
+    		#while cmd != 27 and not rospy.is_shutdown():
+    		for i in range(100):
+        		img,label = testing_dataset[numpy.random.randint(0, 4999)]
+        		y = nn.feedforward(img).transpose()
+        		print("\nPerceptron output: " + str(y))
+        		print("Expected output  : "   + str(label.transpose()))
+        		print("Recognized digit : "   + str(numpy.argmax(y)))
+        		cv2.imshow("Digit", numpy.reshape(numpy.asarray(img, dtype="float32"), (28,28,1)))
+        		expected = numpy.argmax(label.transpose())
+        		recognized = numpy.argmax(y)
+        		if expected == recognized:
+        			hits +=1
+        		p =+ 1
+        		tiempo = (end_time - start_time).to_sec()
+        		print("Prueba No. " + str(p))
+        		print("Reconocidos = " + str(hits))
+        		print("Tiempo: " + str(tiempo) + " segundos")
+        		resultados.write("Prueba #%d" %p)
+        		resultados.write("Epochs = %d " %epochs)
+        		resultados.write("Batch size = %d " %batch_size)
+        		resultados.write("Learning rate = %d\n" %learning_rate)
+        		resultados.write("Tiempo = %f [s]\n" %tiempo)
+        
+    resultados.close()
+    print("\n FIN :3")
     cmd = cv2.waitKey(0)
-    while cmd != 27 and not rospy.is_shutdown():
-        img,label = testing_dataset[numpy.random.randint(0, 4999)]
-        y = nn.feedforward(img).transpose()
-        print("\nPerceptron output: " + str(y))
-        print("Expected output  : "   + str(label.transpose()))
-        print("Recognized digit : "   + str(numpy.argmax(y)))
-        cv2.imshow("Digit", numpy.reshape(numpy.asarray(img, dtype="float32"), (28,28,1)))
-        cmd = cv2.waitKey(0)
+        
     
 
 if __name__ == '__main__':
