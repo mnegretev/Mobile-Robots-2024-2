@@ -182,39 +182,42 @@ def main():
     			if cmd == 27 or rospy.is_shutdown():
     				break
     	
-    		start_time = rospy.Time.now()
-    		nn.train_by_SGD(training_dataset, epochs, batch_size, learning_rate)
-    		end_time = rospy.Time.now()
-    		hits = 0
-    		numpy.set_printoptions(formatter={'float_kind':"{:.3f}".format})
+    			start_time = rospy.Time.now()
+    			nn.train_by_SGD(training_dataset, epochs, batch_size, learning_rate)
+    			end_time = rospy.Time.now()
+    			hits = 0
+    			numpy.set_printoptions(formatter={'float_kind':"{:.3f}".format})
     
     
-    		#numpy.savez(dataset_folder + "network",w=nn.weights, b=nn.biases)
-    		#print("\nPress key to test network or ESC to exit...")
-    		#cmd = cv2.waitKey(0)
+    			#numpy.savez(dataset_folder + "network",w=nn.weights, b=nn.biases)
+    			#print("\nPress key to test network or ESC to exit...")
+    			#cmd = cv2.waitKey(0)
     		
-    		#while cmd != 27 and not rospy.is_shutdown():
-    		for i in range(100):
-        		img,label = testing_dataset[numpy.random.randint(0, 4999)]
-        		y = nn.feedforward(img).transpose()
-        		print("\nPerceptron output: " + str(y))
-        		print("Expected output  : "   + str(label.transpose()))
-        		print("Recognized digit : "   + str(numpy.argmax(y)))
-        		cv2.imshow("Digit", numpy.reshape(numpy.asarray(img, dtype="float32"), (28,28,1)))
-        		expected = numpy.argmax(label.transpose())
-        		recognized = numpy.argmax(y)
-        		if expected == recognized:
-        			hits +=1
-        		p =+ 1
-        		tiempo = (end_time - start_time).to_sec()
-        		print("Prueba No. " + str(p))
-        		print("Reconocidos = " + str(hits))
-        		print("Tiempo: " + str(tiempo) + " segundos")
-        		resultados.write("Prueba #%d" %p)
-        		resultados.write("Epochs = %d " %epochs)
-        		resultados.write("Batch size = %d " %batch_size)
-        		resultados.write("Learning rate = %d\n" %learning_rate)
-        		resultados.write("Tiempo = %f [s]\n" %tiempo)
+    			#while cmd != 27 and not rospy.is_shutdown():
+    			for i in range(100):
+
+        			img,label = testing_dataset[numpy.random.randint(0, 4999)]
+        			y = nn.feedforward(img).transpose()
+        			print("\nPerceptron output: " + str(y))
+        			print("Expected output  : "   + str(label.transpose()))
+        			print("Recognized digit : "   + str(numpy.argmax(y)))
+        			cv2.imshow("Digit", numpy.reshape(numpy.asarray(img, dtype="float32"), (28,28,1)))
+        			expected = numpy.argmax(label.transpose())
+        			recognized = numpy.argmax(y)
+        			if expected == recognized:
+        				hits +=1
+    			p =+ 1
+    			tiempo = (end_time - start_time).to_sec()
+    			print("Prueba No. " + str(p))
+    			print("Reconocidos = " + str(hits))
+    			print("Tiempo: " + str(tiempo) + " segundos")
+    		
+    			resultados.write("Prueba #%d" %p)
+    			resultados.write("Epochs = %d " %epochs)
+    			resultados.write("Batch size = %d " %batch_size)
+    			resultados.write("Aciertos = %d" %hits)
+    			resultados.write("Learning rate = %f\n" %learning_rate)
+    			resultados.write("Tiempo = %f [s]\n" %tiempo)
         
     resultados.close()
     print("\n FIN :3")
