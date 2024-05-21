@@ -1,0 +1,58 @@
+<launch>
+  <arg name="debug" default="False"/>
+  <arg name="static_map_file"  default="$(find config_files)/maps/appartment.yaml"/>
+  <arg name="initial_pose_x" default="3.28"/>
+  <arg name="initial_pose_y" default="5.83"/>
+  <arg name="initial_pose_a" default="-1.52"/>
+  
+  <include file="$(find surge_et_ambula)/launch/justina/gazebo_simul/justina_hardware_gazebo.launch">
+    <arg name="posx"  value="7.68"/>
+    <arg name="posy"  value="5.24"/>
+    <arg name="posz"  value="0.05"/>
+    <arg name="yaw"   value="1.62"/>
+    <arg name="world" value="appartment"/>
+  </include>
+  
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find config_files)/rviz/final_project.rviz"/>
+  
+  <node name="justina_gui" pkg="justina_gui" type="justina_gui_node" output="screen">
+    <param name="la_predefined" value="$(find config_files)/justina/manipulation/la_predefined.yaml"/>
+    <param name="ra_predefined" value="$(find config_files)/justina/manipulation/ra_predefined.yaml"/>
+    <param name="hd_predefined" value="$(find config_files)/justina/manipulation/hd_predefined.yaml"/>
+  </node>
+
+  <include file="$(find surge_et_ambula)/launch/justina/gazebo_simul/justina_gazebo_controllers.launch"/>
+
+  <node name="map_server" pkg="map_server" type="map_server" output="screen" args="$(arg static_map_file)"/>
+
+  <node name="amcl" pkg="amcl" type="amcl" output="screen" args="scan:=/hardware/scan">
+    <param name="initial_pose_x" value="$(arg initial_pose_x)"/>
+    <param name="initial_pose_y" value="$(arg initial_pose_y)"/>
+    <param name="initial_pose_a" value="$(arg initial_pose_a)"/>
+    <param name="update_min_a" value="0.3"/>
+    <param name="laser_min_range" value="0.2"/>
+    <param name="odom_model_type" value="omni"/>
+  </node>
+
+  <!-- COURSE ASSIGNMENTS AND PRACTICES -->
+  <node name="map_inflater" pkg="map_augmenter" type="map_inflater.py">
+    <param name="inflation_radius" value="0.2"/>
+  </node>
+  <node name="a_star" pkg="path_planner" type="a_star.py" output="screen"/>
+  <node name="cost_map" pkg="path_planner" type="cost_map.py">
+    <param name="cost_radius" value="0.5"/>
+  </node>
+  <node name="path_follower" pkg="simple_move" type="path_follower.py" output="screen">
+    <param name="v_max" value="0.5"/>
+    <param name="w_max" value="1.0"/>
+    <param name="alpha" value="1.0"/>
+    <param name="beta"  value="0.5"/>
+  </node>
+  <node name="path_smoother" pkg="path_planner" type="path_smoothing.py" output="screen">
+    <param name="alpha" value="0.9"/>
+    <param name="beta"  value="0.1"/>
+  </node>
+  <node name="hsv_segmentation" pkg="color_segmentation" type="hsv_segmentation.py" output="screen"/>
+  <include file="$(find surge_et_ambula)/launch/justina/manipulation.launch"/>
+  <include file="$(find surge_et_ambula)/launch/justina/hri.launch"/>
+</launch>
