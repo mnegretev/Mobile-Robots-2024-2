@@ -19,7 +19,7 @@ from manip_msgs.srv import *
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 
 prompt = ""
-NAME = "FULL_NAME"
+NAME = "Miguel Angel Rafael Gonzalez"
 
 def get_polynomial_trajectory(q0, q1, dq0=0, dq1=0, ddq0=0, ddq1=1, t=1.0, step=0.05):
     T = numpy.arange(0, t, step)
@@ -33,6 +33,20 @@ def get_polynomial_trajectory(q0, q1, dq0=0, dq1=0, ddq0=0, ddq1=1, t=1.0, step=
     # Trajectory must have a duration 't' and a sampling time 'step'
     # Return both the time T and position Q vectors 
     #
+    A = [[   t**5,    t**4,   t**3, t**2, t, 1],
+         [ 5*t**4,  4*t**3, 3*t**2,  2*t, 1 ,0],
+         [20*t**3, 12*t**2,    6*t,    2, 0, 0],
+         [      0,       0,      0,    0, 0, 1],
+         [      0,       0,      0,    0, 1, 0],
+         [      0,       0,      0,    2, 0, 0]]
+    A = numpy.asarray(A)
+    B = numpy.asarray([q1, dq1, ddq1, q0, dq0, ddq0]).T
+    X = numpy.dot(numpy.linalg.inv(A),B)
+    [a5, a4, a3, a2, a1, a0] = X
+    print([a5, a4, a3, a2, a1, a0])
+    T = numpy.arange(0, t, step)
+    
+    Q = a5*T**5 + a4*T**4 + a3*T**3 + a2*T**2 + a1*T + a0
     
     return T, Q
     
@@ -91,5 +105,4 @@ def main():
 
 if __name__ == '__main__':
     main()
-
 
