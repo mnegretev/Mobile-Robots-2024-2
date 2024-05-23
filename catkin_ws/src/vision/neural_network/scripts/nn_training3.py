@@ -168,7 +168,7 @@ def main():
     # epochs_list = [3, 10, 50, 100]
     # epochs_list = [3, 10] # GADIEL
     # epochs_list = [50, 100] # MAURICIO
-    epochs_list = [10] # MAURICIO
+    epochs_list = [3] # MAURICIO
     batch_size_list = [5, 10, 30, 100]
     learning_rate_list = [0.5, 1.0, 3.0, 10.0]
     

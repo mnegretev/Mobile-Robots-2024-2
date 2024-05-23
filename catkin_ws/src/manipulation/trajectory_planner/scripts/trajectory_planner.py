@@ -19,20 +19,32 @@ from manip_msgs.srv import *
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 
 prompt = ""
-NAME = "FULL_NAME"
+NAME = "BAFO SEMICONDUCTORS INC. "
 
-def get_polynomial_trajectory(q0, q1, dq0=0, dq1=0, ddq0=0, ddq1=1, t=1.0, step=0.05):
-    T = numpy.arange(0, t, step)
+def get_polynomial_trajectory(q0, q1, dq0=0, dq1=0, ddq0=0, ddq1=0, t=1.0, step=0.05):
+    T = numpy.arange(0, t + step, step)
     Q = numpy.zeros(T.shape)
-    #
-    # TODO:
-    # Calculate a trajectory Q as a set of N values q using a
-    # fifth degree polynomial.
-    # Initial and final positions, velocities and accelerations
-    # are given by q, dq, and ddq.
-    # Trajectory must have a duration 't' and a sampling time 'step'
-    # Return both the time T and position Q vectors 
-    #
+
+    # Define the time matrix for boundary conditions
+    time_matrix = numpy.array([
+        [1, 0, 0, 0, 0, 0],
+        [1, t, t**2, t**3, t**4, t**5],
+        [0, 1, 0, 0, 0, 0],
+        [0, 1, 2*t, 3*t**2, 4*t**3, 5*t**4],
+        [0, 0, 2, 0, 0, 0],
+        [0, 0, 2, 6*t, 12*t**2, 20*t**3]
+    ])
+    
+    # Define the boundary conditions vector
+    boundary_conditions = numpy.array([q0, q1, dq0, dq1, ddq0, ddq1])
+    
+    # Solve for the polynomial coefficients
+    coefficients = numpy.linalg.solve(time_matrix, boundary_conditions)
+    
+    # Calculate the trajectory
+    for i in range(len(T)):
+        Q[i] = (coefficients[0] + coefficients[1] * T[i] + coefficients[2] * T[i]**2 + 
+                coefficients[3] * T[i]**3 + coefficients[4] * T[i]**4 + coefficients[5] * T[i]**5)
     
     return T, Q
     
