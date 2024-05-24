@@ -45,6 +45,12 @@ def forward_kinematics(q, T, W):
     #     Check online documentation of these functions:
     #     http://docs.ros.org/en/jade/api/tf/html/python/transformations.html
     #
+    H = tft.identity_matrix()
+    for i in range(len(q)):
+        H = tft.concatenate_matrices(H, Ti[i], tft.rotation_matrix(q[i], Wi[i]))
+    H = tft.concatenate_matrices(H , Ti[7])
+    x,y,z = H[0,3] , H[1,3] , H[2,3]
+    R,P,Y = list(tft.euler_from_matrix(H))
     
     return numpy.asarray([x,y,z,R,P,Y])
 
@@ -73,11 +79,19 @@ def jacobian(q, T, W):
     #     RETURN J
     #
     J = numpy.asarray([[0.0 for a in q] for i in range(6)])
+    qn = numpy.asarray([q,]*len(q)) + delta_q*numpy.identity(len(q))
+    qp = numpy.asarray([q,]*len(q)) - delta_q*numpy.identity(len(q))
+    for i in range(len(q)):
+        J[:,i] = (forward_kinematics(qn[i], Ti , Wi) - forward_kinematics(qp[i], Ti, Wi))/delta_q/2.0
     
     return J
 
 def inverse_kinematics(x, y, z, roll, pitch, yaw, T, W, init_guess=numpy.zeros(7), max_iter=20):
     pd = numpy.asarray([x,y,z,roll,pitch,yaw])
+    tolerance = 0.01
+    max_iterations = 20
+    iterations = 0 
+    
     #
     # TODO:
     # Solve the IK problem given a kinematic description (Ti, Wi) and a desired configuration.
@@ -101,12 +115,28 @@ def inverse_kinematics(x, y, z, roll, pitch, yaw, T, W, init_guess=numpy.zeros(7
     #    Set success if maximum iterations were not exceeded and calculated angles are in valid range
     #    Return calculated success and calculated q
     #
-    q = init_guess
-    iterations = 0
-    success = iterations < max_iter and angles_in_joint_limits(q)
     
-    return success, q
-   
+    q = numpy.asarray([-0.5, 0.6, 0.3, 2.0, 0.3, 0.2, 0.3])
+    p = forward_kinematics(q,Ti,Wi)
+    err = p - pd
+    err =[3:6] = (err[3:6] + math.pi)%(2*math.pi) - math.pi
+    while numpy.linalg.norm(err) > tolerance and iterations < max_iterations: 
+        J = jacobian(q,Ti,Wi)
+        q = (q - numpy.dot(numpy.linalg.pinv(J), err) + math.pi)%(2*math.pi) - math.pi
+        p = forward_kinematics(q , Ti , Wi)
+        err = p - pd
+        err[3:6] = (err[3:6] + math.pi)%(2*math.pi) - math.pi
+        iterations +=1
+    if iterations < max_iterations:
+         print("InverseKinematics. -> IK solved after" + str(iterations) + " iterations: " + str(q))
+         return q
+    else:
+         print("InverseKinematics. -> Cannot solved IK. Max attempts exceeded. ")
+         return None
+         
+         
+         
+         
 def get_polynomial_trajectory_multi_dof(Q_start, Q_end, duration=1.0, time_step=0.05):
     clt = rospy.ServiceProxy("/manipulation/polynomial_trajectory", GetPolynomialTrajectory)
     req = GetPolynomialTrajectoryRequest()
