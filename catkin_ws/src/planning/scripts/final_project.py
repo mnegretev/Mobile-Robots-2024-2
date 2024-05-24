@@ -318,32 +318,32 @@ def main():
                 executing_task = True
        
        
-    elif current_state == "SM_MOVE_HEAD":
-        print("Moving head")
-        move_head(-1,0)
-        current_state = "SM_FIND_OBJECT"
+        elif current_state == "SM_MOVE_HEAD":
+            print("Moving head")
+            move_head(-1,0)
+            current_state = "SM_FIND_OBJECT"
         
-    elif current_state == "SM_FIND_OBJECT":
-        x,y,z = find_object(requested_object)
-        print("Found" + requested_object + " at " + str([x,y,z]))
-        current_state = "SM_TAKE_OBJECT"
+        elif current_state == "SM_FIND_OBJECT":
+            x,y,z = find_object(requested_object)
+            print("Found" + requested_object + " at " + str([x,y,z]))
+            current_state = "SM_TAKE_OBJECT"
         
-    elif current_state == "SM_TAKE_OBJECT":
-        x,y,z = transform_point(x,y,z)
-        print("Transformed position: " + str([x,y,z]))
-        print("Moving arm...")
-        Q = get_la_polynomial_trajectory([-1, 0.2 , 0 , 1.55, 0 , 1.16 , 0], duration = 4.0)
-        move_left_arm_with_trajectory(Q)
-        print("Opening gripper")
-        move_left_gripper(1.0)
+        elif current_state == "SM_TAKE_OBJECT":
+            x,y,z = transform_point(x,y,z)
+            print("Transformed position: " + str([x,y,z]))
+            print("Moving arm...")
+            Q = get_la_polynomial_trajectory([-1, 0.2 , 0 , 1.55, 0 , 1.16 , 0], duration = 4.0)
+            move_left_arm_with_trajectory(Q)
+            print("Opening gripper")
+            move_left_gripper(1.0)
         
-        print("Calculating inverse kinematics")
-        Q = calcuate_inverse_kinematics_left(x,y,z ,0,-1.5, 0)
-        move_left_arm_whit_trajectory(Q)
-        move_left_gripper(-0.1)
-        current_state == "SM_DELIVER"            
+            print("Calculating inverse kinematics")
+            Q = calcuate_inverse_kinematics_left(x,y,z ,0,-1.5, 0)
+            move_left_arm_whit_trajectory(Q)
+            move_left_gripper(-0.1)
+            current_state == "SM_DELIVER"            
         
-    loop.sleep()
+        loop.sleep()
 
 if __name__ == '__main__':
     main()
