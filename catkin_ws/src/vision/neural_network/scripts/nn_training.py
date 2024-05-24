@@ -192,7 +192,7 @@ def main():
         esperado = numpy.argmax(label.transpose())
         reconocido = numpy.argmax(y)
         if esperado == reconocido:
-        	aciertos += 1
+            aciertos += 1
 
     print("Tiempo de entrenamiento: " + str(1000*(end-start).to_sec()) + "ms")
     print("Aciertos:" + str(aciertos))    
