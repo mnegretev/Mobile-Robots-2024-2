@@ -332,20 +332,18 @@ def main():
         x,y,z = transform_point(x,y,z)
         print("Transformed position: " + str([x,y,z]))
         print("Moving arm...")
-        move_left_arm(-1,0.2,0,1.55,0,1.16,0)
-        
+        Q = get_la_polynomial_trajectory([-1, 0.2 , 0 , 1.55, 0 , 1.16 , 0], duration = 4.0)
+        move_left_arm_with_trajectory(Q)
         print("Opening gripper")
         move_left_gripper(1.0)
         
         print("Calculating inverse kinematics")
         Q = calcuate_inverse_kinematics_left(x,y,z ,0,-1.5, 0)
         move_left_arm_whit_trajectory(Q)
+        move_left_gripper(-0.1)
+        current_state == "SM_DELIVER"            
         
-        print("CLosing gripper")
-        move_left_gripper(-1.0)
-                    
-        
-        loop.sleep()
+    loop.sleep()
 
 if __name__ == '__main__':
     main()
