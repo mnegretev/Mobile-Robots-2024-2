@@ -30,7 +30,7 @@ from vision_msgs.srv import *
 from manip_msgs.srv import *
 from hri_msgs.msg import *
 
-NAME = "FULL NAME"
+NAME = "Mendoza Ruiz HAmish SAith"
 
 #
 # Global variable 'speech_recognized' contains the last recognized sentence
@@ -317,7 +317,30 @@ def main():
                 new_task = False
                 executing_task = True
                 
-        
+        elif current_state == "MOVE_HEAD":
+            print("Moving head")
+            move_head(-1,0)
+            current_state == "FIND_OBJECT"
+            
+        elif current_state == "FIND_OBJECT":
+            print("Trying to find: " + requested_object)
+            x,y,z = find_object(requested_object)
+            print("Found " + requested_object +  "at" + str([x,y,z]))
+            current_state == "TAKE_OBJECT"
+            
+        elif current_state == "TAKE_OBJECT":
+            x,y,z = transform_point(x,y,z)
+            print("Transformed position: " + str([x,y,z]))
+            print("Moving arm ...")
+            Q = get_la_polynomial_trajectory([-1,0.2,0,1.55,0,1.16,0],duration=4.0)
+            move_left_arm_with_trajectory(Q)
+            print("Openning gripper")
+            move_left_gripper(1.0)
+            print("Calculating inverse kinematics")
+            Q=calculate_inverse_kinematics_left(x,y,z,0,-1.5,0)
+            move_left_arm_with_trajectory(Q)
+            move_left_gripper(-0.1)
+            current_state == "DELIVER"
         loop.sleep()
 
 if __name__ == '__main__':
