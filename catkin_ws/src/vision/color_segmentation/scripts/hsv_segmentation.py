@@ -20,7 +20,7 @@ from sensor_msgs.msg import PointCloud2
 from geometry_msgs.msg import PointStamped, Point
 from vision_msgs.srv import RecognizeObject, RecognizeObjectResponse
 
-NAME = "FULL_NAME"
+NAME = "Guzmán Vázquez Alan Ernesto"
 
 def segment_by_color(img_bgr, points, obj_name):
     img_x, img_y, x,y,z = 0,0,0,0,0
@@ -40,11 +40,27 @@ def segment_by_color(img_bgr, points, obj_name):
     #   Example: 'points[240,320][1]' gets the 'y' value of the point corresponding to
     #   the pixel in the center of the image.
     #
+    lower = (25, 50, 50) if obj_name == "pringles" else (10, 200, 50)
+    upper = (35, 255, 255) if obj_name == "pringles" else (20, 255, 255)
+
+    img_hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
+    img_bin = cv2.inRange(img_hsv,lower,upper)
+    indices = cv2.findNonZero(img_bin)
+    img_center = cv2.mean(indices)
+    img_x = img_center[0]
+    img_y = img_center[1]
+    print(f"Image center is on {img_center}")
+    x,y,z = 0,0,0
+    for [[c,r]] in indices:
+    	x,y,z = x + points[r,c][0], y + points[r,c][1], z + points[r,c][2]
+    
+    x,y,z = x/len(indices), y/len(indices), z/len(indices)
+    print(f"The object was detected in {[x,y,z]}" )
     
     return [img_x, img_y, x,y,z]
 
 def callback_find_object(req):
-    global pub_point, img_bgr
+    global pub_point, img_bgr, img_x, img_y
     print("Trying to find object: " + req.name)
     arr = ros_numpy.point_cloud2.pointcloud2_to_array(req.point_cloud)
     rgb_arr = arr['rgb'].copy()
