@@ -30,7 +30,7 @@ from vision_msgs.srv import *
 from manip_msgs.srv import *
 from hri_msgs.msg import *
 
-NAME = "FULL NAME"
+NAME = "Silva Gonzalez Yamile Citlalli"
 
 #
 # Global variable 'speech_recognized' contains the last recognized sentence
@@ -300,6 +300,7 @@ def main():
     #
     # FINAL PROJECT 
     #
+    
     executing_task = False
     current_state = "SM_INIT"
     new_task = False
@@ -309,16 +310,18 @@ def main():
             print("Waiting for new task")
             current_state = "SM_WAITING_NEW_TASK"
         elif current_state == "SM_WAITING_NEW_TASK":
+        
+        
             if new_task:
-                requested_object, requested_location = parse_command(recognized_speech)
+                requested_object = requested_location = parse_command(recognized_speech)
                 print("New task received: " + requested_object + " to  " + str(requested_location))
                 say("Executing the command, " + recognized_speech)
                 current_state = "SM_MOVE_HEAD"
                 new_task = False
                 executing_task = True
                 
-        
-        loop.sleep()
+	
+        #loop.sleep()
 
 if __name__ == '__main__':
     main()
