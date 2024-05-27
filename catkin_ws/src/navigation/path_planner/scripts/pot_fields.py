@@ -90,7 +90,7 @@ def move_by_pot_fields(global_goal_x, global_goal_y, epsilon, tol, eta, zeta, d0
         Fa = attraction_force(goal_x, goal_y, eta)
         Fr = rejection_force(laser_readings, zeta, d0)
         F = Fa + Fr
-        P = -epsilon*Fa
+        P = -epsilon*F
         [v,w]=calculate_control(P[0],P[1],alpha,beta)
         publish_speed_and_forces(v,w,Fa,Fr,F)
         goal_x, goal_y = get_goal_point_wrt_robot(global_goal_x, global_goal_y)
