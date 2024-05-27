@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+++#!/usr/bin/env python3
 #
 # MOBILE ROBOTS - FI-UNAM, 2024-2
 # FINAL PROJECT - SIMPLE SERVICE ROBOT
@@ -308,6 +308,7 @@ def main():
         if current_state == "SM_INIT":
             print("Waiting for new task")
             current_state = "SM_WAITING_NEW_TASK"
+        
         elif current_state == "SM_WAITING_NEW_TASK":
             if new_task:
                 requested_object, requested_location = parse_command(recognized_speech)
@@ -317,7 +318,61 @@ def main():
                 new_task = False
                 executing_task = True
                 
-        
+        elif current_state == "SM_MOVE_HEAD":
+            print("Moving head")
+            move_head(0,-1)
+            current_state = "FIND_OBJECT"
+           
+        elif current_state == "FIND_OBJECT":
+            print("Trying to find " + requested_object)
+            x,y,z = find_object(requested_object)
+            print("Found " + requested_object + "at " + str([x,y,z]))
+            current_state = "TAKE_OBJECT"
+            
+        elif current_state == "TAKE_OBJECT":
+            if requested_object == "pringles":
+                x,y,x = transform_point(x,y,z)
+                print("Transformed position: " + str([x,y,z]))
+                print("Moving arm...")
+                Q = get_la_polynomial_trajectory([-1,0.2,0,1.55,0,1.16,0],duration=4.0)
+                move_left_arm_with_trajectory(Q)
+                print("Openning gripper")
+                move_left_gripper(1.0)
+                print("Calculating inverse kinematics...")
+                Q = calculate_inverse_kinematics_left(x,y,z,0,-1.5,0)
+                move_left_arm_with_trajectory(Q)
+                move_left_gripper(-0.1)
+            else:
+                x,y,x = transform_point(x,y,z,"realsense_link","shoulders_right_link")
+                print("Transformed position: " + str([x,y,z]))
+                print("Moving arm...")
+                Q = get_ra_polynomial_trajectory([-1,0.2,0,1.55,0,1.16,0],duration=4.0)
+                move_right_arm_with_trajectory(Q)
+                print("Openning gripper")
+                move_right_gripper(1.0)
+                print("Calculating inverse kinematics...")
+                Q = calculate_inverse_kinematics_right(x,y,z,0,-1.5,0)
+                move_right_arm_with_trajectory(Q)
+                move_right_gripper(-0.1)
+               
+            current_state = "DELIVER"
+        elif current_state == "DELIVER":
+            if not goal_reached:
+                go_to_goal_pose(requested_location[0],requested_location[1])
+            elif goal_reached:
+                executing_task = False
+                current_state = "FINISH'
+        elif current_state == "FINISH":
+            if requested_object == "pringles":
+                move_left_gripper(0.4)
+            else:
+                move_right_gripper(0.4)
+            current_state = "SM_INIT"
+            break
+        else:
+            print("ERROR,arriba el cruz azul ")
+            break;
+              
         loop.sleep()
 
 if __name__ == '__main__':
