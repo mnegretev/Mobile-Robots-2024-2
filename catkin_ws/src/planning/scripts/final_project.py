@@ -333,19 +333,33 @@ def main():
         #SM_TAKE_OBJECT: Transforma las coordenadas del objeto, mueve el brazo izquierdo 
         #a la posición para agarrar el objeto, y cierra el gripper.
         elif current_state == "SM_TAKE_OBJECT":
-            x,y,z = transform_point(x,y,z)
-            print("Transformed position: " + str([x,y,z]))
-            print("Moving arm...")
+            x, y, z = transform_point(x, y, z)
+            print("Transformed position: " + str([x, y, z]))
+            
+            # Mover el brazo a una posición inicial segura
+            print("Moving arm to initial position...")
             Q = get_la_polynomial_trajectory([-1, 0.2, 0, 1.55, 0, 1.16, 0], duration=4.0)
             move_left_arm_with_trajectory(Q)
-            print("Openning gripper")
+            
+            # Abrir el gripper antes de acercarse al objeto
+            print("Opening gripper")
             move_left_gripper(1.0)
-            print("Calculating inverse kinematics")
-            rospy.loginfo("Calculating inverse kinematics for object grasping")
-            Q = calculate_inverse_kinematics_left(x, y, z, 0, -math.pi / 2, 0)
+            
+            # Mover el brazo a una posición por encima del objeto
+            print("Moving arm to position above the object...")
+            intermediate_z = z + 0.1  # Elevar el brazo 10 cm por encima del objeto
+            Q = calculate_inverse_kinematics_left(x, y, intermediate_z, 0, -math.pi / 2, 0)
             move_left_arm_with_trajectory(Q)
+            
+            # Bajar el brazo verticalmente para agarrar el objeto
+            print("Lowering arm to grasp the object...")
+            Q.points[-1].positions[2] = z  # Ajustar solo la coordenada z de la última posición
+            move_left_arm_with_trajectory(Q)
+            
+            # Cerrar el gripper para agarrar el objeto
             rospy.loginfo("Closing gripper to grasp the object")
             move_left_gripper(0.0)
+            
             current_state = "SM_NAVIGATE_TO_LOCATION"
 
         #SM_NAVIGATE_TO_LOCATION: Navega hacia la ubicación solicitada.
