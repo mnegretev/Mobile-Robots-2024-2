@@ -341,7 +341,27 @@ def main():
             Q = calculate_inverse_kinematics_left(x,y,z,0,-1.5,0)
             move_left_arm_with_trajectory(Q)
             move_left_gripper(-0.1)
-            current_state = "DELIVER"
+            current_state = "MOVE_TO_LOCATION"
+
+        elif current_state == "MOVE_TO_LOCATION":
+            print("moving to: " + str[requested_location])
+            go_to_goal_pose(requested_location)
+            print("arriving at requested_location")
+            current_state = "LEAVE_OBJECT"
+
+        elif current_state == "LEAVE_OBJECT":
+            x,y,x = transform_point(x,y,z)
+            print("Transformed position: " + str([x,y,z]))
+            print("Moving arm...")
+            Q = get_la_polynomial_trajectory([-1,0.2,0,1.55,0,1.16,0],duration=4.0)
+            move_left_arm_with_trajectory(Q)
+            print("Moving object")
+            #move_left_gripper(1.0)
+            print("Calculating inverse kinematics...")
+            Q = calculate_inverse_kinematics_left(x,y,z,0,-1.5,0)
+            move_left_arm_with_trajectory(Q)
+            move_left_gripper(1.0) #????????
+            current_state = "SM_WAITING_NEW_TASK"
             
         
         loop.sleep()
