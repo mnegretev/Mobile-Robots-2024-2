@@ -314,8 +314,6 @@ def main():
         elif current_state == "SM_WAITING_NEW_TASK":
             if new_task:
                 requested_object, requested_location = parse_command(recognized_speech)
-            #requested_object = "pringles"  #Para pruebas en casa
-            #requested_location = [3.22, 9.72] #Para pruebas en casa
                 print("New task received: " + requested_object + " to  " + str(requested_location))
                 say("Executing the command, " + recognized_speech)
                 current_state = "SM_MOVE_HEAD"
@@ -398,6 +396,29 @@ def main():
                 
         #Arrive to goal and leave object        
         elif current_state == "SM_GOAL":
+            print("Delivering Object ...")
+            print("Moving arm for delivery")
+
+            if requested_object == "pringles":
+                Q = get_la_polynomial_trajectory([0.7,0,0,1.55,0,-0.5,0], duration=3.0)
+                move_left_arm_with_trajectory(Q)
+                print("Opening gripper")
+                move_left_gripper(1.0)
+
+            elif requested_object == "drink":
+                Q = get_ra_polynomial_trajectory([0.7,0,0,1.55,-0.5,0,0], duration=5.0)
+                move_right_arm_with_trajectory(Q)
+                print("Opening gripper")
+                move_right_gripper(1.0)
+    
+            say("Your requested item has been delivered")
+
+
+
+
+
+
+            ###############3
             Q = get_la_polynomial_trajectory([1, 0, 0, 0, 0, 0, 0], duration=2.0)
             if requested_object == "pringles":
                 move_left_arm_with_trajectory(Q)
