@@ -269,20 +269,7 @@ def main():
                 move_left_arm_with_trajectory(Q_above)
 
                 print("Lowering left arm to grasp the object...")
-                # Crear una nueva trayectoria con el punto final ajustado
-                Q_lower = JointTrajectory()
-                Q_lower.joint_names = Q_above.joint_names
-                Q_lower.points = []
-                for point in Q_above.points:
-                    new_point = JointTrajectoryPoint()
-                    new_point.positions = list(point.positions)
-                    new_point.velocities = list(point.velocities)
-                    new_point.accelerations = list(point.accelerations)
-                    new_point.effort = list(point.effort)
-                    new_point.time_from_start = point.time_from_start
-                    Q_lower.points.append(new_point)
-                # Ajustar solo la coordenada z del último punto
-                Q_lower.points[-1].positions[2] = z
+                Q_lower = calculate_inverse_kinematics_left(x, y, z, 0, -math.pi / 2, 0)
                 move_left_arm_with_trajectory(Q_lower)
 
                 rospy.loginfo("Closing left gripper to grasp the object")
@@ -303,26 +290,14 @@ def main():
                 move_right_arm_with_trajectory(Q_above)
 
                 print("Lowering right arm to grasp the object...")
-                # Crear una nueva trayectoria con el punto final ajustado
-                Q_lower = JointTrajectory()
-                Q_lower.joint_names = Q_above.joint_names
-                Q_lower.points = []
-                for point in Q_above.points:
-                    new_point = JointTrajectoryPoint()
-                    new_point.positions = list(point.positions)
-                    new_point.velocities = list(point.velocities)
-                    new_point.accelerations = list(point.accelerations)
-                    new_point.effort = list(point.effort)
-                    new_point.time_from_start = point.time_from_start
-                    Q_lower.points.append(new_point)
-                # Ajustar solo la coordenada z del último punto
-                Q_lower.points[-1].positions[2] = z
+                Q_lower = calculate_inverse_kinematics_right(x, y, z, 0, -math.pi / 2, 0)
                 move_right_arm_with_trajectory(Q_lower)
 
                 rospy.loginfo("Closing right gripper to grasp the object")
                 move_right_gripper(0.0)
 
             current_state = "SM_NAVIGATE_TO_LOCATION"
+
 
 
         elif current_state == "SM_NAVIGATE_TO_LOCATION":
