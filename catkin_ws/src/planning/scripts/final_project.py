@@ -348,7 +348,7 @@ def main():
                 x,y,z = transform_point(x,y,z)
                 print("Transformed position: " + str([x,y,z]))
                 print("Moving arm...")
-                Q = get_la_polynomial_trajectory([-0.69, 0.2, 0, 1.55, 0.0,1.16, 0.0],duration=1.0)               
+                Q = get_la_polynomial_trajectory([-0.69, 0.2, 0, 1.55, 0.0,1.16, 0.0],duration=4.0)               
                 move_left_arm_with_trajectory(Q)
                 rospy.sleep(3)
                 move_base(0.5, 0.0, 1.9)
@@ -380,7 +380,7 @@ def main():
                 print("Closing gripper")
                 move_left_gripper(-0.1)
             else:
-                Q = calculate_inverse_kinematics_left(x,y,z,0,-1.5,0)
+                Q = calculate_inverse_kinematics_left(x,y,z,0,0,0)
                 move_left_arm_with_trajectory(Q)
                 rospy.sleep(3)
                 print("Closing gripper")
@@ -405,7 +405,7 @@ def main():
             
             break
         else:
-            print("ERROR,arriba el cruz azul ")
+            print("ERROR")
             break;
             
         
