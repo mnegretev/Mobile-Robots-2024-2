@@ -328,7 +328,7 @@ def main():
             print("Trying to find: " + requested_object)
             x,y,z = find_object(requested_object)
             print("Found " + requested_object + "  at " + str([x,y,z]))
-        z += 0.07
+            z += 0.07
             current_state = "SM_TAKE_OBJECT"
 
         #SM_TAKE_OBJECT: Transforma las coordenadas del objeto, mueve el brazo izquierdo 
