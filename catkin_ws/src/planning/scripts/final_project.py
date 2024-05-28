@@ -387,12 +387,28 @@ def main():
             
         #Navigate to goal    
         elif current_state == "SM_NAVIGATE":
-            move_base(-5,0,0,2)
-            go_to_goal_pose(requested_location[0],requested_location[1])
-            if goal_reached:
-                say("Goal reached")
-                current_state = "SM_GOAL"
-                goal_reached = False
+            print("Changing position ...")
+            if requested_location == "table":
+                go_to_goal_pose(8.0,8.5)
+                if goal_reached == True:
+                    #Getting ready to deliver
+                    print("Moving base for delivery ...")
+                    #Giro a la derecha
+                    move_base(0,-1,1)
+                    #Hacia frente
+                    move_base(1,0,1)
+                    current_state = "SM_GOAL"
+
+            elif requested_location == "kitchen":
+                go_to_goal_pose(3.22, 9.72)
+                if goal_reached == True:
+                    #Getting ready to deliver
+                    print("Moving base for delivery ...")
+                    #Giro a la izquierda
+                    move_base(0, -0.5, 1)
+                    #Hacia frente
+                    move_base(1,0,4)
+                    current_state = "SM_GOAL"
                 
         #Arrive to goal and leave object        
         elif current_state == "SM_GOAL":
@@ -413,24 +429,6 @@ def main():
     
             say("Your requested item has been delivered")
 
-
-
-
-
-
-            ###############3
-            Q = get_la_polynomial_trajectory([1, 0, 0, 0, 0, 0, 0], duration=2.0)
-            if requested_object == "pringles":
-                move_left_arm_with_trajectory(Q)
-                time.sleep(4)
-                move_left_gripper(1.0)
-            else:
-                move_right_arm_with_trajectory(Q)
-                time.sleep(4)
-                move_right_gripper(1)
-            say("Task completed")
-            current_state = "SM_COMPLETED"
-         
         #Finish task   
         elif current_state == "SM_COMPLETED":           
             executing_task = False
