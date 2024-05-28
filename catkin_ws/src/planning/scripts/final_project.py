@@ -254,6 +254,7 @@ def main():
             x, y, z = transform_point(x, y, z, target_frame=target_frame)
             print("Transformed position: " + str([x, y, z]))
 
+            
             if requested_object == "pringles":
                 # Lógica para el brazo izquierdo
                 print("Moving left arm to initial position...")
@@ -264,13 +265,21 @@ def main():
                 move_left_gripper(1.0)
 
                 print("Moving left arm to position above the object...")
-                intermediate_z = z + 0.09  # Añadir 7 cm a la posición z para evitar colisiones
+                intermediate_z = z + 0.07  # Añadir 7 cm a la posición z para evitar colisiones
                 Q = calculate_inverse_kinematics_left(x, y, intermediate_z, 0, -math.pi / 2, 0)
                 move_left_arm_with_trajectory(Q)
 
                 print("Lowering left arm to grasp the object...")
-                Q = calculate_inverse_kinematics_left(x, y, z, 0, -math.pi / 2, 0)
-                move_left_arm_with_trajectory(Q)
+                # Ajustar la posición final con un movimiento vertical controlado
+                Q_lower = JointTrajectory()
+                Q_lower.joint_names = Q.joint_names
+                Q_lower.points = list(Q.points)
+                last_point = Q_lower.points[-1]
+                last_point.positions = list(last_point.positions)
+                last_point.positions[2] = z  # Ajustar solo la coordenada z
+                last_point.positions = tuple(last_point.positions)
+                Q_lower.points[-1] = last_point
+                move_left_arm_with_trajectory(Q_lower)
 
                 rospy.loginfo("Closing left gripper to grasp the object")
                 move_left_gripper(0.0)
