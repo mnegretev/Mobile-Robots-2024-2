@@ -233,7 +233,7 @@ def get_la_polynomial_trajectory(q, duration=2.0, time_step=0.05):
 #
 # Calls the service for calculating a polynomial trajectory for the right arm
 #
-def get_la_polynomial_trajectory(q, duration=5.0, time_step=0.05):
+def get_ra_polynomial_trajectory(q, duration=5.0, time_step=0.05):
     current_p = rospy.wait_for_message("/hardware/right_arm/current_pose", Float64MultiArray)
     current_p = current_p.data
     clt = rospy.ServiceProxy("/manipulation/polynomial_trajectory", GetPolynomialTrajectory)
@@ -277,11 +277,11 @@ def main():
     global pubLaGoalTraj, pubRaGoalTraj, pubGoalPose, pubCmdVel, pubSay
     print("FINAL PROJECT - " + NAME)
     rospy.init_node("final_project")
-    rospy.Subscriber('/hri/sp_rec/recognized', RecognizedSpeech, callback_recognized_speech)
+    #rospy.Subscriber('/hri/sp_rec/recognized', RecognizedSpeech, callback_recognized_speech)
     rospy.Subscriber('/navigation/goal_reached', Bool, callback_goal_reached)
     pubGoalPose = rospy.Publisher('/move_base_simple/goal', PoseStamped, queue_size=10)
     pubCmdVel   = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
-    pubSay      = rospy.Publisher('/hri/speech_generator', SoundRequest, queue_size=10)
+    #pubSay      = rospy.Publisher('/hri/speech_generator', SoundRequest, queue_size=10)
     pubLaGoalPose = rospy.Publisher("/hardware/left_arm/goal_pose" , Float64MultiArray, queue_size=10);
     pubRaGoalPose = rospy.Publisher("/hardware/right_arm/goal_pose", Float64MultiArray, queue_size=10);
     pubHdGoalPose = rospy.Publisher("/hardware/head/goal_pose"     , Float64MultiArray, queue_size=10);
@@ -308,12 +308,15 @@ def main():
         if current_state == "SM_INIT":
             print("Waiting for new task")
             current_state = "SM_WAITING_NEW_TASK"
+            new_task = True
         
         elif current_state == "SM_WAITING_NEW_TASK":
             if new_task:
-                requested_object, requested_location = parse_command(recognized_speech)
+                # requested_object, requested_location = parse_command(recognized_speech)
+                requested_object, requested_location = "pringles", [3.22, 9.72]
                 print("New task received: " + requested_object + " to  " + str(requested_location))
-                say("Executing the command, " + recognized_speech)
+                # say("Executing the command, " + recognized_speech)
+                print("Executing the command, ROBOT TAKE THE PRINGLES TO THE KITCHEN")
                 current_state = "SM_MOVE_HEAD"
                 new_task = False
                 executing_task = True
@@ -326,11 +329,11 @@ def main():
         elif current_state == "FIND_OBJECT":
             print("Trying to find " + requested_object)
             x,y,z = find_object(requested_object)
-            print("Found " + requested_object + "at " + str([x,y,z]))
+            print("Found " + requested_object + " at " + str([x,y,z]))
             current_state = "TAKE_OBJECT"
             
         elif current_state == "TAKE_OBJECT":
-            x,y,x = transform_point(x,y,z)
+            x,y,z = transform_point(x,y,z)
             print("Transformed position: " + str([x,y,z]))
             print("Moving arm...")
             Q = get_la_polynomial_trajectory([-1,0.2,0,1.55,0,1.16,0],duration=4.0)
