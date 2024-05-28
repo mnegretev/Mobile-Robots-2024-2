@@ -61,13 +61,7 @@ def parse_command(cmd):
 def move_left_arm(q1,q2,q3,q4,q5,q6,q7):
     global pubLaGoalPose
     msg = Float64MultiArray()
-    msg.data.append(q1)
-    msg.data.append(q2)
-    msg.data.append(q3)
-    msg.data.append(q4)
-    msg.data.append(q5)
-    msg.data.append(q6)
-    msg.data.append(q7)
+    msg.data = [q1, q2, q3, q4, q5, q6, q7]
     pubLaGoalPose.publish(msg)
     time.sleep(2.0)
 
@@ -78,7 +72,7 @@ def move_left_arm(q1,q2,q3,q4,q5,q6,q7):
 def move_left_arm_with_trajectory(Q):
     global pubLaGoalTraj
     pubLaGoalTraj.publish(Q)
-    time.sleep(0.05*len(Q.points) + 2)
+    time.sleep(0.05 * len(Q.points) + 2)
 
 #
 # Esta función envía la posición angular objetivo al gripper izquierdo y duerme 1 segundo
@@ -96,13 +90,7 @@ def move_left_gripper(q):
 def move_right_arm(q1,q2,q3,q4,q5,q6,q7):
     global pubRaGoalPose
     msg = Float64MultiArray()
-    msg.data.append(q1)
-    msg.data.append(q2)
-    msg.data.append(q3)
-    msg.data.append(q4)
-    msg.data.append(q5)
-    msg.data.append(q6)
-    msg.data.append(q7)
+    msg.data = [q1, q2, q3, q4, q5, q6, q7]
     pubRaGoalPose.publish(msg)
     time.sleep(2.0)
 
@@ -113,7 +101,7 @@ def move_right_arm(q1,q2,q3,q4,q5,q6,q7):
 def move_right_arm_with_trajectory(Q):
     global pubRaGoalTraj
     pubRaGoalTraj.publish(Q)
-    time.sleep(0.05*len(Q.points) + 2)
+    time.sleep(0.05 * len(Q.points) + 2)
 
 #
 # Esta función envía la posición angular objetivo al gripper derecho y duerme 1 segundo
@@ -131,8 +119,7 @@ def move_right_gripper(q):
 def move_head(pan, tilt):
     global pubHdGoalPose
     msg = Float64MultiArray()
-    msg.data.append(pan)
-    msg.data.append(tilt)
+    msg.data = [pan, tilt]
     pubHdGoalPose.publish(msg)
     time.sleep(1.0)
 
