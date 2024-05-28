@@ -153,10 +153,10 @@ def move_base(linear, hor, angular, t):
     time.sleep(t)
     pubCmdVel.publish(Twist())
 
-#
+
 # This function publishes a global goal position. This topic is subscribed by
 # pratice04 and performs path planning and tracking.
-#
+
 def go_to_goal_pose(goal_x, goal_y):
     global pubGoalPose
     goal_pose = PoseStamped()
@@ -165,9 +165,7 @@ def go_to_goal_pose(goal_x, goal_y):
     goal_pose.pose.position.y = goal_y
     pubGoalPose.publish(goal_pose)
 
-#
 # This function sends a text to be synthetized.
-#
 def say(text):
     global pubSay
     msg = SoundRequest()
@@ -178,10 +176,8 @@ def say(text):
     msg.arg = text
     pubSay.publish(msg)
 
-#
-# This function calls the service for calculating inverse kinematics for left arm
+#calls the service for calculating inverse kinematics for left arm
 # and returns the calculated articular position.
-#
 def calculate_inverse_kinematics_left(x,y,z,roll, pitch, yaw):
     req_ik = InverseKinematicsPose2TrajRequest()
     req_ik.x = x
@@ -197,10 +193,8 @@ def calculate_inverse_kinematics_left(x,y,z,roll, pitch, yaw):
     resp = clt(req_ik)
     return resp.articular_trajectory
 
-#
 # This function calls the service for calculating inverse kinematics for right arm
 # and returns the calculated articular position.
-#
 def calculate_inverse_kinematics_right(x,y,z,roll, pitch, yaw):
     req_ik = InverseKinematicsPose2TrajRequest()
     req_ik.x = x
@@ -234,7 +228,7 @@ def get_la_polynomial_trajectory(q, duration=2.0, time_step=0.05):
 #
 # Calls the service for calculating a polynomial trajectory for the right arm
 #
-def get_la_polynomial_trajectory(q, duration=5.0, time_step=0.05):
+def get_ra_polynomial_trajectory(q, duration=5.0, time_step=0.05):
     current_p = rospy.wait_for_message("/hardware/right_arm/current_pose", Float64MultiArray)
     current_p = current_p.data
     clt = rospy.ServiceProxy("/manipulation/polynomial_trajectory", GetPolynomialTrajectory)
@@ -298,9 +292,7 @@ def main():
     rospy.wait_for_service('/vision/obj_reco/detect_and_recognize_object')
     print("Services are now available.")
 
-    #
     # FINAL PROJECT 
-    #
     
     executing_task = False
     current_state = "SM_INIT"
@@ -338,8 +330,7 @@ def main():
             print("Transformed position: " + str([x, y, z]))
             #Left arm if pringles
             if requested_object == "pringles":
-                
-                print("Openning gripper")
+                print("Moving left arm to initial position...")
                 move_left_gripper(1.0)
                 print("Moving arm... ")
                 Q = get_la_polynomial_trajectory([-1, 0.2, 0, 1.55, 0, 1.16, 0], duration=4.0)
@@ -354,18 +345,20 @@ def main():
                 
             #Right arm if drink
             elif requested_object == "drink":
-                print("Openning gripper")
+                print("Moving right arm to initial position...")
                 move_right_gripper(1.0)
                 print("Moving arm... ")
-                Q = get_ra_polynomial_trajectory([-1, 0.2, 0, 1.55, 0, 1.16, 0], duration=4.0)
+                Q = get_ra_polynomial_trajectory([-0.55,0.15,0.1,1.5,1.0,0,0], duration=4.0)
                 move_right_arm_with_trajectory(Q)
                 print("Calculating inverse kinematics...")
-                Q = calculate_inverse_kinematics_right(x+0.02,y,z+0.1,0,-1.5,0)
+                Q = calculate_inverse_kinematics_right(x,y,z,0,-1.5,0)
+                #Q = calculate_inverse_kinematics_right(x+0.02,y,z+0.1,0,-1.5,0)
                 move_right_arm_with_trajectory(Q)
                 time.sleep(2)
                 move_left_gripper(-0.5)
-                Q = get_la_polynomial_trajectory([-1, 0.2, 0, 1.5, 0, 1.16, 0], duration=4.0)
-                move_left_arm_with_trajectory(Q)
+                Q = get_ra_polynomial_trajectory([-0.7,0.2,0,1.55,0,1.16,0], duration=4.0)
+                #Q = get_ra_polynomial_trajectory([-1, 0.2, 0, 1.5, 0, 1.16, 0], duration=4.0)
+                move_right_arm_with_trajectory(Q)
                 #move_base(0,1,0,1)
                 #time.sleep(2)
                 #x,y,x = transform_point(x,y,z,"realsense_link","shoulders_right_link")
@@ -386,29 +379,33 @@ def main():
             
         #Navigate to goal    
         elif current_state == "SM_NAVIGATE":
-            elif requested_location == "table":
-                print("Changing position ...")
-                go_to_goal_pose(8.0,8.5)
-                if goal_reached == True:
-                    #Getting ready to deliver
-                    print("Moving base for delivery ...")
-                    #Giro a la derecha
-                    move_base(0,-1,1)
-                    #Hacia frente
-                    move_base(1,0,1)
-                    current_state = "SM_GOAL"
-                    goal_reached = False
+            print(requested_location)
 
-            elif requested_location == "kitchen":
-                print("Changing position ...")
+            if requested_location == [3.22, 9.72]:
+                print("Changing position kitchen...")
                 go_to_goal_pose(3.22, 9.72)
                 if goal_reached == True:
                     #Getting ready to deliver
                     print("Moving base for delivery ...")
                     #Giro a la izquierda
-                    move_base(0, -0.5, 1)
+                    move_base(0, -0.5, 1, 0.5)
                     #Hacia frente
-                    move_base(1,0,4)
+                    move_base(1, 0, 4, 0.5)
+                    current_state = "SM_GOAL"
+                    goal_reached = False
+
+            else:
+                print("Changing position table...")
+                go_to_goal_pose(8.0,8.5)
+                if goal_reached == True:
+                    #Getting ready to deliver
+                    print("Moving base for delivery ...")
+                    #Giro a la derecha
+                    move_base(0, 0,-0.32,2)
+                    print("giro")
+                    #Hacia frente
+                    move_base(0.25, 0, 0, 2)
+                    print("avance")
                     current_state = "SM_GOAL"
                     goal_reached = False
                 
@@ -416,15 +413,15 @@ def main():
         elif current_state == "SM_GOAL":
             print("Delivering Object ...")
             print("Moving arm for delivery")
-
             if requested_object == "pringles":
-                Q = get_la_polynomial_trajectory([0.7,0,0,1.55,0,-0.5,0], duration=3.0)
+                Q = get_la_polynomial_trajectory([0.7,0,0,1.55,0,-0.5,0], duration=4.0)
                 move_left_arm_with_trajectory(Q)
                 print("Opening gripper")
                 move_left_gripper(1.0)
 
             elif requested_object == "drink":
-                Q = get_ra_polynomial_trajectory([0.7,0,0,1.55,-0.5,0,0], duration=5.0)
+                Q = get_ra_polynomial_trajectory([-0.7,0.2,0,1.55,0,1.16,0], duration=4.0)
+                #Q = get_ra_polynomial_trajectory([0.7,0,0,1.55,-0.5,0,0], duration=3.0)
                 move_right_arm_with_trajectory(Q)
                 print("Opening gripper")
                 move_right_gripper(1.0)
