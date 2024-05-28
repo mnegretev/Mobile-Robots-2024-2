@@ -264,7 +264,7 @@ def main():
                 move_left_gripper(1.0)
 
                 print("Moving left arm to position above the object...")
-                intermediate_z = z + 0.07  # Añadir 7 cm a la posición z para evitar colisiones
+                intermediate_z = z + 0.1  # Añadir 7 cm a la posición z para evitar colisiones
                 Q_above = calculate_inverse_kinematics_left(x, y, intermediate_z, 0, -math.pi / 2, 0)
                 move_left_arm_with_trajectory(Q_above)
 
