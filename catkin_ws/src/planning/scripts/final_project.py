@@ -254,15 +254,13 @@ def main():
     rospy.wait_for_service('/manipulation/ra_ik_pose')
     rospy.wait_for_service('/vision/obj_reco/detect_and_recognize_object')
     print("Services are now available.")
-    #
-    # FINAL PROJECT 
-    #
+
     executing_task = False
     current_state = "SM_INIT"
     new_task = False
     goal_reached = False
     while not rospy.is_shutdown():
-        print(f"Current state: {current_state}")  # Debugging line to show current state
+        print(f"Current state: {current_state}")  
         if current_state == "SM_INIT":
             print("Waiting for new task")
             current_state = "SM_WAITING_NEW_TASK"
@@ -275,9 +273,8 @@ def main():
                 new_task = False
                 executing_task = True
         elif current_state == "SM_MOVE_HEAD":
-            # Move head to look for the object
             print("Moving head to look for the object")
-            move_head(0, -0.5)  # Adjust pan and tilt values as necessary
+            move_head(0, -0.5) 
             say("Looking for the " + requested_object)
             current_state = "SM_FIND_OBJECT"
         elif current_state == "SM_FIND_OBJECT":
@@ -294,9 +291,9 @@ def main():
             print("Moving arm to pick up the object")
             x, y, z = obj_pos
             target_position = transform_point(x, y, z)
-            traj = calculate_inverse_kinematics_left(*target_position, 0, math.pi/2, 0)  # Adjust orientation as needed
+            traj = calculate_inverse_kinematics_left(*target_position, 0, math.pi/2, 0)
             move_left_arm_with_trajectory(traj)
-            move_left_gripper(0.8)  # Adjust gripper value as needed
+            move_left_gripper(0.8)
             say("I am picking up the " + requested_object)
             current_state = "SM_NAVIGATE"
         elif current_state == "SM_NAVIGATE":
@@ -310,7 +307,7 @@ def main():
                 current_state = "SM_PLACE_OBJECT"
         elif current_state == "SM_PLACE_OBJECT":
             print("Placing object")
-            move_left_gripper(0)  # Open gripper to release object
+            move_left_gripper(0)
             say("I have placed the " + requested_object)
             current_state = "SM_TASK_COMPLETED"
         elif current_state == "SM_TASK_COMPLETED":
