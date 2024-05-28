@@ -20,13 +20,14 @@ import tf
 import math
 import time
 from std_msgs.msg import String, Float64MultiArray, Float64, Bool
+from nav_msgs.srv import GetPlan, GetPlanRequest
 from sensor_msgs.msg import PointCloud2
 from geometry_msgs.msg import Twist, PoseStamped, PointStamped
 from trajectory_msgs.msg import JointTrajectory
 from sound_play.msg import SoundRequest
-from vision_msgs.srv import RecognizeObject, RecognizeObjectRequest
-from manip_msgs.srv import InverseKinematicsPose2Traj, InverseKinematicsPose2TrajRequest, GetPolynomialTrajectory, GetPolynomialTrajectoryRequest
-from hri_msgs.msg import RecognizedSpeech
+from vision_msgs.srv import *
+from manip_msgs.srv import *
+from hri_msgs.msg import *
 
 NAME = "Lopez Sanchez Julio Adan"
 
@@ -321,6 +322,9 @@ def main():
             target_frame = "shoulders_left_link" if requested_object == "pringles" else "shoulders_right_link"
             x, y, z = transform_point(x, y, z, target_frame=target_frame)
             print("Transformed position: " + str([x, y, z]))
+
+            # Añadir 15 cm a la posición z para evitar colisiones
+            z += 0.15
 
             if requested_object == "pringles":
                 # Lógica para el brazo izquierdo
