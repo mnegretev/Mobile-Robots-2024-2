@@ -46,6 +46,9 @@ def segment_by_color(img_bgr, points, obj_name):
     img_bin = cv2.inRange(img_hsv,lower,upper)
     indices = cv2.findNonZero(img_bin)
     img_center = cv2.mean(indices)
+    img_x = img_center[0]
+    img_y = img_center[1]
+    print(f"Image center is on {img_center}")
     x,y,z = 0,0,0
     for [[c,r]] in indices:
     	x,y,z = x + points[r,c][0], y + points[r,c][1], z + points[r,c][2]
