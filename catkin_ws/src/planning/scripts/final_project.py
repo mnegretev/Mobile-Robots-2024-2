@@ -53,7 +53,7 @@ def callback_goal_reached(msg):
 
 def parse_command(cmd):
     obj = "pringles" if "PRINGLES" in cmd else "drink"
-    loc = [8.0,8.5] if "TABLE" in cmd else [3.22, 9.72]
+    loc = "table" if "TABLE" in cmd else "kitchen"
     return obj, loc
 
 #
@@ -381,16 +381,15 @@ def main():
         elif current_state == "SM_NAVIGATE":
             print(requested_location)
 
-            if requested_location == [3.22, 9.72]:
+            if requested_location == "kitchen":
                 print("Changing position kitchen...")
-                go_to_goal_pose(3.22, 9.72)
+                go_to_goal_pose(3.22, 9.2)
                 if goal_reached == True:
                     #Getting ready to deliver
                     print("Moving base for delivery ...")
                     #Giro a la izquierda
-                    move_base(0, -0.5, 1, 0.5)
-                    #Hacia frente
-                    move_base(1, 0, 4, 0.5)
+                    print("giro")
+                    move_base(2, 1, 2, 2.7)
                     current_state = "SM_GOAL"
                     goal_reached = False
 
@@ -401,10 +400,10 @@ def main():
                     #Getting ready to deliver
                     print("Moving base for delivery ...")
                     #Giro a la derecha
-                    move_base(0, 0,-0.32,2)
+                    move_base(2,1,1,2)
                     print("giro")
                     #Hacia frente
-                    move_base(0.25, 0, 0, 2)
+                    move_base(0.2, 0, 0, 2)
                     print("avance")
                     current_state = "SM_GOAL"
                     goal_reached = False
@@ -418,6 +417,7 @@ def main():
                 move_left_arm_with_trajectory(Q)
                 print("Opening gripper")
                 move_left_gripper(1.0)
+                goal_reached = False
 
             elif requested_object == "drink":
                 Q = get_ra_polynomial_trajectory([-0.7,0.2,0,1.55,0,1.16,0], duration=4.0)
@@ -425,6 +425,7 @@ def main():
                 move_right_arm_with_trajectory(Q)
                 print("Opening gripper")
                 move_right_gripper(1.0)
+                goal_reached = False
     
             say("Your requested item has been delivered")
 
