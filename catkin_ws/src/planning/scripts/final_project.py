@@ -29,7 +29,7 @@ from vision_msgs.srv import *
 from manip_msgs.srv import *
 from hri_msgs.msg import *
 
-NAME = "Lopez Sanchez Julio Adan"
+NAME = "Roberto Ángel Camacho Bernabé"
 
 #
 # Global variable 'speech_recognized' contains the last recognized sentence
@@ -156,10 +156,10 @@ def go_to_goal_pose(goal_x, goal_y):
 def say(text):
     global pubSay
     msg = SoundRequest()
-    msg.sound   = -3
+    msg.sound = -3
     msg.command = 1
-    msg.volume  = 1.0
-    msg.arg2    = "voice_kal_diphone"
+    msg.volume = 1.0
+    msg.arg2 = "voice_kal_diphone"
     msg.arg = text
     pubSay.publish(msg)
 
@@ -239,7 +239,7 @@ def find_object(object_name):
     clt_find_object = rospy.ServiceProxy("/vision/obj_reco/detect_and_recognize_object", RecognizeObject)
     req_find_object = RecognizeObjectRequest()
     req_find_object.point_cloud = rospy.wait_for_message("/camera/depth_registered/points", PointCloud2)
-    req_find_object.name  = object_name
+    req_find_object.name = object_name
     resp = clt_find_object(req_find_object)
     return [resp.recog_object.pose.position.x, resp.recog_object.pose.position.y, resp.recog_object.pose.position.z]
 
@@ -252,7 +252,9 @@ def transform_point(x, y, z, source_frame="realsense_link", target_frame="should
     obj_p = PointStamped()
     obj_p.header.frame_id = source_frame
     obj_p.header.stamp = rospy.Time(0)
-    obj_p.point.x, obj_p.point.y, obj_p.point.z = x, y, z
+    obj_p.point.x = x
+    obj_p.point.y = y
+    obj_p.point.z = z
     obj_p = listener.transformPoint(target_frame, obj_p)
     return [obj_p.point.x, obj_p.point.y, obj_p.point.z]
 
@@ -265,8 +267,8 @@ def main():
     rospy.Subscriber('/hri/sp_rec/recognized', RecognizedSpeech, callback_recognized_speech)
     rospy.Subscriber('/navigation/goal_reached', Bool, callback_goal_reached)
     pubGoalPose = rospy.Publisher('/move_base_simple/goal', PoseStamped, queue_size=10)
-    pubCmdVel   = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
-    pubSay      = rospy.Publisher('/hri/speech_generator', SoundRequest, queue_size=10)
+    pubCmdVel = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
+    pubSay = rospy.Publisher('/hri/speech_generator', SoundRequest, queue_size=10)
     pubLaGoalPose = rospy.Publisher("/hardware/left_arm/goal_pose", Float64MultiArray, queue_size=10)
     pubRaGoalPose = rospy.Publisher("/hardware/right_arm/goal_pose", Float64MultiArray, queue_size=10)
     pubHdGoalPose = rospy.Publisher("/hardware/head/goal_pose", Float64MultiArray, queue_size=10)
@@ -323,8 +325,8 @@ def main():
             x, y, z = transform_point(x, y, z, target_frame=target_frame)
             print("Transformed position: " + str([x, y, z]))
 
-            # Añadir 15 cm a la posición z para evitar colisiones
-            z += 0.15
+            # Añadir 10 cm a la posición z para evitar colisiones
+            z += 0.10
 
             if requested_object == "pringles":
                 # Lógica para el brazo izquierdo
