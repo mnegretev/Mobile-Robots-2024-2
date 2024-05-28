@@ -323,7 +323,7 @@ def main():
                 
         elif current_state == "SM_MOVE_HEAD":
             print("Moving head")
-            move_head(-1,0)
+            move_head(0,-1)
             current_state == "SM_FIND_OBJECT"
             
         elif current_state == "SM_FIND_OBJECT":
