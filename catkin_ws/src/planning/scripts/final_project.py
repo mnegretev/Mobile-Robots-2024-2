@@ -264,14 +264,12 @@ def main():
                 move_left_gripper(1.0)
 
                 print("Moving left arm to position above the object...")
-                intermediate_z = z + 0.07  # Añadir 7 cm a la posición z para evitar colisiones
+                intermediate_z = z + 0.09  # Añadir 7 cm a la posición z para evitar colisiones
                 Q = calculate_inverse_kinematics_left(x, y, intermediate_z, 0, -math.pi / 2, 0)
                 move_left_arm_with_trajectory(Q)
 
                 print("Lowering left arm to grasp the object...")
-                Q.points[-1].positions = list(Q.points[-1].positions)
-                Q.points[-1].positions[2] = z  # Ajustar la coordenada z
-                Q.points[-1].positions = tuple(Q.points[-1].positions)
+                Q = calculate_inverse_kinematics_left(x, y, z, 0, -math.pi / 2, 0)
                 move_left_arm_with_trajectory(Q)
 
                 rospy.loginfo("Closing left gripper to grasp the object")
@@ -287,14 +285,12 @@ def main():
                 move_right_gripper(1.0)
 
                 print("Moving right arm to position above the object...")
-                intermediate_z = z + 0.07  # Añadir 7 cm a la posición z para evitar colisiones
+                intermediate_z = z + 0.09  # Añadir 7 cm a la posición z para evitar colisiones
                 Q = calculate_inverse_kinematics_right(x, y, intermediate_z, 0, -math.pi / 2, 0)
                 move_right_arm_with_trajectory(Q)
 
                 print("Lowering right arm to grasp the object...")
-                Q.points[-1].positions = list(Q.points[-1].positions)
-                Q.points[-1].positions[2] = z  # Ajustar la coordenada z
-                Q.points[-1].positions = tuple(Q.points[-1].positions)
+                Q = calculate_inverse_kinematics_right(x, y, z, 0, -math.pi / 2, 0)
                 move_right_arm_with_trajectory(Q)
 
                 rospy.loginfo("Closing right gripper to grasp the object")
