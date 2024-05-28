@@ -265,7 +265,7 @@ def main():
 
                 print("Moving left arm to position above the object...")
                 intermediate_z = z + 0.1  # Añadir 10 cm a la posición z para evitar colisiones
-                intermediate_x = x + 0.02
+                intermediate_x = x + 0.04
                 Q_above = calculate_inverse_kinematics_left(intermediate_x, y, intermediate_z, 0, -math.pi / 2, 0)
                 move_left_arm_with_trajectory(Q_above)
 
