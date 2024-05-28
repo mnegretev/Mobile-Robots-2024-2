@@ -241,52 +241,57 @@ def main():
             rospy.loginfo("Found " + requested_object + " at " + str([x, y, z]))
             current_state = "SM_TAKE_OBJECT"
 
+        # SM_TAKE_OBJECT: Transforma las coordenadas del objeto, mueve el brazo apropiado
+        # a la posición para agarrar el objeto, y cierra el gripper.
         elif current_state == "SM_TAKE_OBJECT":
+            # Verificar el brazo adecuado
             target_frame = "shoulders_left_link" if requested_object == "pringles" else "shoulders_right_link"
             x, y, z = transform_point(x, y, z, target_frame=target_frame)
-            if x is None or y is None or z is None:
-                rospy.logwarn("Failed to transform point, retrying...")
-                continue
-            rospy.loginfo("Transformed position: " + str([x, y, z]))
+            print("Transformed position: " + str([x, y, z]))
 
-            z += 0.07
+            # Añadir 10 cm a la posición z para evitar colisiones
+            z += 0.1
 
             if requested_object == "pringles":
-                rospy.loginfo("Moving left arm to initial position...")
+                # Lógica para el brazo izquierdo
+                print("Moving left arm to initial position...")
                 Q = get_la_polynomial_trajectory([-1, 0.2, 0, 1.55, 0, 1.16, 0], duration=4.0)
                 move_left_arm_with_trajectory(Q)
 
-                rospy.loginfo("Opening left gripper")
+                print("Opening left gripper")
                 move_left_gripper(1.0)
 
-                rospy.loginfo("Moving left arm to position above the object...")
-                intermediate_z = z + 0.07
-                Q = calculate_inverse_kinematics_left(x, y, intermediate_z, 0, -math.pi / 2, 0)
-                move_left_arm_with_trajectory(Q)
+                print("Moving left arm to position above the object...")
+                Q_above = calculate_inverse_kinematics_left(x, y, z, 0, -math.pi / 2, 0)
+                move_left_arm_with_trajectory(Q_above)
 
-                rospy.loginfo("Lowering left arm to grasp the object...")
-                Q_lower = calculate_inverse_kinematics_left(x, y, z, 0, -math.pi / 2, 0)
-                move_left_arm_with_trajectory(Q_lower)
+                print("Lowering left arm to grasp the object...")
+                positions = list(Q_above.points[-1].positions)
+                positions[2] = z - 0.1  # Ajustar la posición z para agarrar el objeto
+                Q_above.points[-1].positions = tuple(positions)
+                move_left_arm_with_trajectory(Q_above)
 
                 rospy.loginfo("Closing left gripper to grasp the object")
                 move_left_gripper(0.0)
 
             if requested_object == "drink":
-                rospy.loginfo("Moving right arm to initial position...")
+                # Lógica para el brazo derecho
+                print("Moving right arm to initial position...")
                 Q = get_ra_polynomial_trajectory([-1, 0.2, 0, 1.55, 0, 1.16, 0], duration=4.0)
                 move_right_arm_with_trajectory(Q)
 
-                rospy.loginfo("Opening right gripper")
+                print("Opening right gripper")
                 move_right_gripper(1.0)
 
-                rospy.loginfo("Moving right arm to position above the object...")
-                intermediate_z = z + 0.07
-                Q = calculate_inverse_kinematics_right(x, y, intermediate_z, 0, -math.pi / 2, 0)
-                move_right_arm_with_trajectory(Q)
+                print("Moving right arm to position above the object...")
+                Q_above = calculate_inverse_kinematics_right(x, y, z, 0, -math.pi / 2, 0)
+                move_right_arm_with_trajectory(Q_above)
 
-                rospy.loginfo("Lowering right arm to grasp the object...")
-                Q_lower = calculate_inverse_kinematics_right(x, y, z, 0, -math.pi / 2, 0)
-                move_right_arm_with_trajectory(Q_lower)
+                print("Lowering right arm to grasp the object...")
+                positions = list(Q_above.points[-1].positions)
+                positions[2] = z - 0.1  # Ajustar la posición z para agarrar el objeto
+                Q_above.points[-1].positions = tuple(positions)
+                move_right_arm_with_trajectory(Q_above)
 
                 rospy.loginfo("Closing right gripper to grasp the object")
                 move_right_gripper(0.0)
