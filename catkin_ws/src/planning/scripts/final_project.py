@@ -331,8 +331,8 @@ def main():
             x,y,z = find_object(requested_object)
             print("Found " + requested_object + " at " + str([x,y,z]))
             current_state = "TAKE_OBJECT"
-            
         elif current_state == "TAKE_OBJECT":
+
             x,y,z = transform_point(x,y,z)
             print("Transformed position: " + str([x,y,z]))
             print("Moving arm...")
@@ -344,7 +344,51 @@ def main():
             Q = calculate_inverse_kinematics_left(x,y,z,0,-1.5,0)
             move_left_arm_with_trajectory(Q)
             move_left_gripper(-0.1)
+
+            if requested_object == "pringles":
+                x,y,z = transform_point(x,y,z)
+                print("Transformed position: " + str([x,y,z]))
+                print("Moving arm...")
+                Q = get_la_polynomial_trajectory([-1.2,0.2,-0.01,1.55,0,1.16,0],duration=4.0)
+                move_left_arm_with_trajectory(Q)
+                print("Openning gripper")
+                move_left_gripper(1.0)
+                print("Calculating inverse kinematics...")
+                Q = calculate_inverse_kinematics_left(x,y,z,0,-1.5,0)
+                move_left_arm_with_trajectory(Q)
+                move_left_gripper(-0.1)
+            else:
+                x,y,z= transform_point(x,y,z,"realsense_link","shoulders_right_link")
+                print("Transformed position: " + str([x,y,z]))
+                print("Moving arm...")
+                move_base(-2,0,0)
+                Q = get_ra_polynomial_trajectory([-0.9,-0.2,0,1.3,0.8,0.05,0],duration=4.0)
+                move_right_arm_with_trajectory(Q)
+                
+                print("Openning gripper")
+                move_right_gripper(1.0)
+                print("Calculating inverse kinematics...")
+                Q = calculate_inverse_kinematics_right(x,y,z,0,-1.5,0)
+                move_right_arm_with_trajectory(Q)
+                move_right_gripper(-0.1)
+                
             current_state = "DELIVER"
+        elif current_state == "DELIVER":
+            if not goal_reached:
+                go_to_goal_pose(requested_location[0],requested_location[1])
+            elif goal_reached:
+                executing_task = False
+                current_state = "FINISH"
+        elif current_state == "FINISH":
+            if requested_object == "pringles":
+                move_left_gripper(0.4)
+            else:
+                move_right_gripper(0.4)
+            current_state = "SM_INIT"
+            break
+        else:
+            print("ERROR,arriba el cruz azul ")
+            break;
             
         
         loop.sleep()
