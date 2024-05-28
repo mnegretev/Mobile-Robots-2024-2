@@ -20,7 +20,7 @@ from manip_msgs.srv import *
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 
 prompt = ""
-NAME = "Miguel Angel Rafael Gonzalez"
+NAME = "Rafael Gonzalez Miguel Angel"
    
 def forward_kinematics(q, T, W):
     x,y,z,R,P,Y = 0,0,0,0,0,0
@@ -83,7 +83,7 @@ def jacobian(q, T, W):
     qn = numpy.asarray([q,]*len(q)) + delta_q*numpy.identity(len(q))
     qp = numpy.asarray([q,]*len(q)) - delta_q*numpy.identity(len(q))
     for i in range(len(q)):
-        J[:,i] = (forward_kinematics(qn[i],T,W) - forward_kinematics(qp[i],T,W)) / (delta_q/2)
+        J[:,i] = (forward_kinematics(qn[i],T,W) - forward_kinematics(qp[i],T,W))/ (2.0*delta_q)
 
     return J
 
@@ -120,7 +120,7 @@ def inverse_kinematics(x, y, z, roll, pitch, yaw, T, W, init_guess=numpy.zeros(7
     iterations = 0
     while numpy.linalg.norm(e) > tol and iterations < max_iter:
         J = jacobian(q,T,W)
-        q = (q - numpy.dot(numpy.ling.pinv(J),e) + math.pi)%(2*math.pi) - math.pi
+        q = (q - numpy.dot(numpy.linalg.pinv(J),e) + math.pi)%(2*math.pi) - math.pi
         p = forward_kinematics(q,T,W)
         e = p - pd
         e[3:6] = (e[3:6] + math.pi)%(2*math.pi) - math.pi
@@ -199,6 +199,7 @@ def callback_ik_for_trajectory(req):
     trj = JointTrajectory()
     trj.header.stamp = rospy.Time.now()
     q = initial_guess
+
     for i in range(len(X)):
         x, y, z, roll, pitch, yaw = X[i]
         success, q = inverse_kinematics(x, y, z, roll, pitch, yaw, transforms, W, q, max_iterations)
@@ -255,5 +256,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-
