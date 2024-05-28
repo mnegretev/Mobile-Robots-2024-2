@@ -268,9 +268,9 @@ def main():
                 Q_above = calculate_inverse_kinematics_left(x, y, intermediate_z, 0, -math.pi / 2, 0)
                 move_left_arm_with_trajectory(Q_above)
 
-                print("Lowering left arm to grasp the object...")
-                Q_lower = calculate_inverse_kinematics_left(x, y, z, 0, -math.pi / 2, 0)
-                move_left_arm_with_trajectory(Q_lower)
+                #print("Lowering left arm to grasp the object...")
+                #Q_lower = calculate_inverse_kinematics_left(x, y, z, 0, -math.pi / 2, 0)
+                #move_left_arm_with_trajectory(Q_lower)
 
                 rospy.loginfo("Closing left gripper to grasp the object")
                 move_left_gripper(0.0)
