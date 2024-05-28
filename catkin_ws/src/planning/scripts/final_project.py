@@ -261,7 +261,7 @@ def find_object(object_name):
 #
 # Transforms a point xyz expressed w.r.t. source frame to the target frame
 #
-def transform_point(x,y,z, source_frame="realsense_link", target_frame="shoulders_left_link"):
+def transform_point(x,y,z, source_frame, target_frame):
     listener = tf.TransformListener()
     listener.waitForTransform(target_frame, source_frame, rospy.Time(), rospy.Duration(4.0))
     obj_p = PointStamped()
@@ -270,7 +270,9 @@ def transform_point(x,y,z, source_frame="realsense_link", target_frame="shoulder
     obj_p.point.x, obj_p.point.y, obj_p.point.z = x,y,z
     obj_p = listener.transformPoint(target_frame, obj_p)
     return [obj_p.point.x, obj_p.point.y, obj_p.point.z]
-
+    
+    
+    
 def main():
     global new_task, recognized_speech, executing_task, goal_reached
     global pubLaGoalPose, pubRaGoalPose, pubHdGoalPose, pubLaGoalGrip, pubRaGoalGrip
@@ -316,8 +318,6 @@ def main():
                 current_state = "SM_MOVE_HEAD"
                 new_task = False
                 executing_task = True
-                
-                
         elif current_state == "SM_MOVE_HEAD":
                 print("Moving head")
                 move_head(0,-1)
@@ -329,10 +329,11 @@ def main():
         	print("Found" + requested_object + "at" + str([x,y,z]))
         	current_state="SM_TAKE_OBJECT"
         elif current_state== "SM_TAKE_OBJECT":
-        	x,y,z=transform_point(x,y,z)
+        	#*****************************************Descomentar Para el brazo izquierdo comentar el drecho*************************************************
+        	x, y, z = transform_point(x, y, z, source_frame="realsense_link", target_frame="shoulders_left_link")
         	print("Transformed position:" + str([x,y,z]))
         	print("Moving ARM")
-        	Q = get_la_polynomial_trajectory([-1,0.2,0,1.55,0,1.16,0], duration=4.0)
+        	Q = get_la_polynomial_trajectory([-1.2,0.5,0,0.8,0,1.2,0], duration=2.5)
         	move_left_arm_with_trajectory(Q)
         	print("Oppening gripper")
         	move_left_gripper(1.0)
@@ -341,9 +342,34 @@ def main():
         	move_left_arm_with_trajectory(Q)
         	time.sleep(5)
         	move_left_gripper(-1.0)
-        	Q = get_la_polynomial_trajectory([-1,0.2,0,1.55,0,1.16,0], duration=4.0)
+        	Q = get_la_polynomial_trajectory([-1.2,0.5,0,0.8,0,1.2,0], duration=2.5)
         	move_left_arm_with_trajectory(Q)
         	current_state = "SM_DELIVER"
+        	
+        	#*****************************************Descomentar para el brazo derecho comentar el izquierdo*************************************************
+        	#***************PARECE ESTAR TODO EN ORDEN PERO PARA TENER BUENOS PARAMETORS Y UNA POSICION BUENA EN EL ROBOT NO FUNCIONAAA*************************
+        	#rospy.service.ServiceException: service [/manipulation/ra_ik_trajectory] responded with an error: b"error processing request: 'bool' object has no attribute 'header'"
+        	"""
+        	x, y, z = transform_point(x, y, z, source_frame="realsense_link", target_frame="shoulders_right_link")
+        	print("Transformed position:" + str([x,y,z]))
+        	print("Moving ARM")
+        	Q = get_ra_polynomial_trajectory([-0.5,-0.1,0,2.2,0.6,-0.1,0.1], duration=3.0)
+        	move_right_arm_with_trajectory(Q)
+        	print("Oppening gripper")
+        	move_right_gripper(1.0)
+        	print("Calculating inverse kinematics")
+        	Q = calculate_inverse_kinematics_right(x,y,z,0,-1.5,0)
+        	move_right_arm_with_trajectory(Q)
+        	time.sleep(5)
+        	move_right_gripper(-1.0)
+        	Q = get_ra_polynomial_trajectory([-0.5,-0.1,0,2.2,0.6,-0.1,0.1], duration=3.0)
+        	move_right_arm_with_trajectory(Q)
+        	current_state = "SM_DELIVER"
+       	"""
+       	
+       	
+       #*******************************La navegacion de hace directa esta es para que lo haga automatica no es necesario descomentar********************************************
+        """
         elif current_state == "SM_NAVIGATE_TO_LOCATION":
                print("Navigating to the location")
                go_to_goal_pose(requested_location[0], requested_location[1])
@@ -367,7 +393,7 @@ def main():
             say("Returning to initial position")
             current_state = "SM_INIT"
             executing_task = False
-        loop.sleep()
+        """
         	
         loop.sleep()
 
