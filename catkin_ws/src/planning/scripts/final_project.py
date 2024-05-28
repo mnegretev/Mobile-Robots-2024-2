@@ -22,13 +22,13 @@ import time
 from std_msgs.msg import String, Float64MultiArray, Float64, Bool
 from sensor_msgs.msg import PointCloud2
 from geometry_msgs.msg import Twist, PoseStamped, PointStamped
-from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
+from trajectory_msgs.msg import JointTrajectory
 from sound_play.msg import SoundRequest
 from vision_msgs.srv import RecognizeObject, RecognizeObjectRequest
 from manip_msgs.srv import InverseKinematicsPose2Traj, InverseKinematicsPose2TrajRequest, GetPolynomialTrajectory, GetPolynomialTrajectoryRequest
 from hri_msgs.msg import RecognizedSpeech
 
-NAME = "Roberto Ángel Camacho Bernabé"
+NAME = "Lopez Sanchez Julio Adan"
 
 #
 # Global variable 'speech_recognized' contains the last recognized sentence
@@ -171,9 +171,9 @@ def calculate_inverse_kinematics_left(x, y, z, roll, pitch, yaw):
     req_ik.x = x
     req_ik.y = y
     req_ik.z = z
-    req_ik.roll  = roll
+    req_ik.roll = roll
     req_ik.pitch = pitch
-    req_ik.yaw   = yaw
+    req_ik.yaw = yaw
     req_ik.duration = 0
     req_ik.time_step = 0.05
     req_ik.initial_guess = []
@@ -190,9 +190,9 @@ def calculate_inverse_kinematics_right(x, y, z, roll, pitch, yaw):
     req_ik.x = x
     req_ik.y = y
     req_ik.z = z
-    req_ik.roll  = roll
+    req_ik.roll = roll
     req_ik.pitch = pitch
-    req_ik.yaw   = yaw
+    req_ik.yaw = yaw
     req_ik.duration = 0
     req_ik.time_step = 0.05
     req_ik.initial_guess = []
@@ -337,9 +337,9 @@ def main():
                 move_left_arm_with_trajectory(Q)
 
                 print("Lowering left arm to grasp the object...")
-                Q.points[-1].positions = list(Q.points[-1].positions)
-                Q.points[-1].positions[2] = z
-                Q.points[-1].positions = tuple(Q.points[-1].positions)
+                positions = list(Q.points[-1].positions)
+                positions[2] = z
+                Q.points[-1].positions = tuple(positions)
                 move_left_arm_with_trajectory(Q)
 
                 rospy.loginfo("Closing left gripper to grasp the object")
@@ -360,9 +360,9 @@ def main():
                 move_right_arm_with_trajectory(Q)
 
                 print("Lowering right arm to grasp the object...")
-                Q.points[-1].positions = list(Q.points[-1].positions)
-                Q.points[-1].positions[2] = z
-                Q.points[-1].positions = tuple(Q.points[-1].positions)
+                positions = list(Q.points[-1].positions)
+                positions[2] = z
+                Q.points[-1].positions = tuple(positions)
                 move_right_arm_with_trajectory(Q)
 
                 rospy.loginfo("Closing right gripper to grasp the object")
