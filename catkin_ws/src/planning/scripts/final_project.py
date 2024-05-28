@@ -352,13 +352,13 @@ def main():
                 move_right_arm_with_trajectory(Q)
                 print("Calculating inverse kinematics...")
                 Q = calculate_inverse_kinematics_right(x,y,z,0,-1.5,0)
-                #Q = calculate_inverse_kinematics_right(x+0.02,y,z+0.1,0,-1.5,0)
+                # Q = calculate_inverse_kinematics_right(x+0.02,y,z+0.1,0,-1.5,0)
                 move_right_arm_with_trajectory(Q)
                 time.sleep(2)
-                move_left_gripper(-0.5)
+                move_right_gripper(-0.5)  # Cambiado a move_right_gripper
                 Q = get_ra_polynomial_trajectory([-0.7,0.2,0,1.55,0,1.16,0], duration=4.0)
-                #Q = get_ra_polynomial_trajectory([-1, 0.2, 0, 1.5, 0, 1.16, 0], duration=4.0)
-                move_right_arm_with_trajectory(Q)
+                move_right_arm_with_trajectory(Q)  # Añadido para mover el brazo con la nueva trayectoria
+
                 #move_base(0,1,0,1)
                 #time.sleep(2)
                 #x,y,x = transform_point(x,y,z,"realsense_link","shoulders_right_link")
