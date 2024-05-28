@@ -36,7 +36,7 @@
 
   <!-- COURSE ASSIGNMENTS AND PRACTICES -->
   <node name="map_inflater" pkg="map_augmenter" type="map_inflater.py">
-    <param name="inflation_radius" value="0.2"/>
+    <param name="inflation_radius" value="0.25"/>
   </node>
   <node name="a_star" pkg="path_planner" type="a_star.py" output="screen"/>
   <node name="cost_map" pkg="path_planner" type="cost_map.py">
@@ -45,8 +45,8 @@
   <node name="path_follower" pkg="simple_move" type="path_follower.py" output="screen">
     <param name="v_max" value="0.5"/>
     <param name="w_max" value="1.0"/>
-    <param name="alpha" value="1.0"/>
-    <param name="beta"  value="0.5"/>
+    <param name="alpha" value="0.08"/>
+    <param name="beta"  value="0.08"/>
   </node>
   <node name="path_smoother" pkg="path_planner" type="path_smoothing.py" output="screen">
     <param name="alpha" value="0.9"/>
