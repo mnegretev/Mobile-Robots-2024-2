@@ -50,6 +50,9 @@ def segment_by_color(img_bgr, points, obj_name):
     for [[c, r]] in indices:
     	x,y,z = x + points[r,c][0], y + points[r,c][1], z + points[r,c][2]
     x,y,z = x/len(indices), y/len(indices), z/len(indices)
+    img_x, img_y = img_center[0], img_center[1]
+    print([x,y,z])
+    print(img_center)
     return [img_x, img_y, x,y,z]
 
 def callback_find_object(req):
