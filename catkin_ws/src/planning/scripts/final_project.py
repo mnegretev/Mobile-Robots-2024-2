@@ -254,7 +254,6 @@ def main():
             x, y, z = transform_point(x, y, z, target_frame=target_frame)
             print("Transformed position: " + str([x, y, z]))
 
-            
             if requested_object == "pringles":
                 # Lógica para el brazo izquierdo
                 print("Moving left arm to initial position...")
@@ -266,19 +265,24 @@ def main():
 
                 print("Moving left arm to position above the object...")
                 intermediate_z = z + 0.07  # Añadir 7 cm a la posición z para evitar colisiones
-                Q = calculate_inverse_kinematics_left(x, y, intermediate_z, 0, -math.pi / 2, 0)
-                move_left_arm_with_trajectory(Q)
+                Q_above = calculate_inverse_kinematics_left(x, y, intermediate_z, 0, -math.pi / 2, 0)
+                move_left_arm_with_trajectory(Q_above)
 
                 print("Lowering left arm to grasp the object...")
-                # Ajustar la posición final con un movimiento vertical controlado
+                # Crear una nueva trayectoria con el punto final ajustado
                 Q_lower = JointTrajectory()
-                Q_lower.joint_names = Q.joint_names
-                Q_lower.points = list(Q.points)
-                last_point = Q_lower.points[-1]
-                last_point.positions = list(last_point.positions)
-                last_point.positions[2] = z  # Ajustar solo la coordenada z
-                last_point.positions = tuple(last_point.positions)
-                Q_lower.points[-1] = last_point
+                Q_lower.joint_names = Q_above.joint_names
+                Q_lower.points = []
+                for point in Q_above.points:
+                    new_point = JointTrajectoryPoint()
+                    new_point.positions = list(point.positions)
+                    new_point.velocities = list(point.velocities)
+                    new_point.accelerations = list(point.accelerations)
+                    new_point.effort = list(point.effort)
+                    new_point.time_from_start = point.time_from_start
+                    Q_lower.points.append(new_point)
+                # Ajustar solo la coordenada z del último punto
+                Q_lower.points[-1].positions[2] = z
                 move_left_arm_with_trajectory(Q_lower)
 
                 rospy.loginfo("Closing left gripper to grasp the object")
@@ -294,13 +298,26 @@ def main():
                 move_right_gripper(1.0)
 
                 print("Moving right arm to position above the object...")
-                intermediate_z = z + 0.09  # Añadir 7 cm a la posición z para evitar colisiones
-                Q = calculate_inverse_kinematics_right(x, y, intermediate_z, 0, -math.pi / 2, 0)
-                move_right_arm_with_trajectory(Q)
+                intermediate_z = z + 0.07  # Añadir 7 cm a la posición z para evitar colisiones
+                Q_above = calculate_inverse_kinematics_right(x, y, intermediate_z, 0, -math.pi / 2, 0)
+                move_right_arm_with_trajectory(Q_above)
 
                 print("Lowering right arm to grasp the object...")
-                Q = calculate_inverse_kinematics_right(x, y, z, 0, -math.pi / 2, 0)
-                move_right_arm_with_trajectory(Q)
+                # Crear una nueva trayectoria con el punto final ajustado
+                Q_lower = JointTrajectory()
+                Q_lower.joint_names = Q_above.joint_names
+                Q_lower.points = []
+                for point in Q_above.points:
+                    new_point = JointTrajectoryPoint()
+                    new_point.positions = list(point.positions)
+                    new_point.velocities = list(point.velocities)
+                    new_point.accelerations = list(point.accelerations)
+                    new_point.effort = list(point.effort)
+                    new_point.time_from_start = point.time_from_start
+                    Q_lower.points.append(new_point)
+                # Ajustar solo la coordenada z del último punto
+                Q_lower.points[-1].positions[2] = z
+                move_right_arm_with_trajectory(Q_lower)
 
                 rospy.loginfo("Closing right gripper to grasp the object")
                 move_right_gripper(0.0)
