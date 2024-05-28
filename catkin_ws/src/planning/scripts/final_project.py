@@ -1,56 +1,38 @@
-#!/usr/bin/env python3
-#
-# MOBILE ROBOTS - FI-UNAM, 2024-2
-# FINAL PROJECT - SIMPLE SERVICE ROBOT
-# 
-# Instructions:
-# Write the code necessary to make the robot to perform the following possible commands:
-# * Robot take the <pringles|drink> to the <table|kitchen>
-# You can choose where the table and kitchen are located within the map.
-# The Robot must recognize the orders using speech recognition.
-# Entering the command by text or similar way is not allowed.
-# The Robot must announce the progress of the action using speech synthesis,
-# for example: I'm going to grab..., I'm going to navigate to ..., I arrived to..., etc.
-# Publishers and subscribers to interact with the subsystems (navigation,
-# vision, manipulation, speech synthesis and recognition) are already declared. 
-#
-
 import rospy
 import tf
 import math
 import time
 from std_msgs.msg import String, Float64MultiArray, Float64, Bool
+from nav_msgs.srv import GetPlan, GetPlanRequest
 from sensor_msgs.msg import PointCloud2
 from geometry_msgs.msg import Twist, PoseStamped, PointStamped
 from trajectory_msgs.msg import JointTrajectory
 from sound_play.msg import SoundRequest
-from vision_msgs.srv import RecognizeObject, RecognizeObjectRequest
-from manip_msgs.srv import InverseKinematicsPose2Traj, InverseKinematicsPose2TrajRequest, GetPolynomialTrajectory, GetPolynomialTrajectoryRequest
-from hri_msgs.msg import RecognizedSpeech
+from vision_msgs.srv import *
+from manip_msgs.srv import *
+from hri_msgs.msg import *
+import rosbag
 
 NAME = "Roberto Ángel Camacho Bernabé"
 
-# Global variable 'speech_recognized' contains the last recognized sentence
 def callback_recognized_speech(msg):
     global recognized_speech, new_task, executing_task
     if executing_task:
         return
     new_task = True
     recognized_speech = msg.hypothesis[0]
-    print("New command recognized: " + recognized_speech)
+    rospy.loginfo("New command recognized: " + recognized_speech)
 
-# Global variable 'goal_reached' is set True when the last sent navigation goal is reached
 def callback_goal_reached(msg):
     global goal_reached
     goal_reached = msg.data
-    print("Received goal reached: " + str(goal_reached))
+    rospy.loginfo("Received goal reached: " + str(goal_reached))
 
 def parse_command(cmd):
     obj = "pringles" if "PRINGLES" in cmd else "drink"
     loc = [8.0, 8.5] if "TABLE" in cmd else [3.22, 9.72]
     return obj, loc
 
-# Funciones para mover los brazos y grippers
 def move_left_arm(q1, q2, q3, q4, q5, q6, q7):
     global pubLaGoalPose
     msg = Float64MultiArray()
@@ -183,20 +165,23 @@ def find_object(object_name):
 
 def transform_point(x, y, z, source_frame="realsense_link", target_frame="shoulders_left_link"):
     listener = tf.TransformListener()
-    listener.waitForTransform(target_frame, source_frame, rospy.Time(), rospy.Duration(4.0))
-    obj_p = PointStamped()
-    obj_p.header.frame_id = source_frame
-    obj_p.header.stamp = rospy.Time(0)
-    obj_p.point.x = x
-    obj_p.point.y = y
-    obj_p.point.z = z
-    obj_p = listener.transformPoint(target_frame, obj_p)
-    return [obj_p.point.x, obj_p.point.y, obj_p.point.z]
+    try:
+        listener.waitForTransform(target_frame, source_frame, rospy.Time(), rospy.Duration(10.0))
+        obj_p = PointStamped()
+        obj_p.header.frame_id = source_frame
+        obj_p.header.stamp = rospy.Time(0)
+        obj_p.point.x, obj_p.point.y, obj_p.point.z = x, y, z
+        obj_p = listener.transformPoint(target_frame, obj_p)
+        return [obj_p.point.x, obj_p.point.y, obj_p.point.z]
+    except (tf.Exception, tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException) as e:
+        rospy.logerr(f"Error transforming point: {e}")
+        return None, None, None
 
 def main():
     global new_task, recognized_speech, executing_task, goal_reached
     global pubLaGoalPose, pubRaGoalPose, pubHdGoalPose, pubLaGoalGrip, pubRaGoalGrip
     global pubLaGoalTraj, pubRaGoalTraj, pubGoalPose, pubCmdVel, pubSay
+
     print("FINAL PROJECT - " + NAME)
     rospy.init_node("final_project")
     rospy.Subscriber('/hri/sp_rec/recognized', RecognizedSpeech, callback_recognized_speech)
@@ -219,78 +204,87 @@ def main():
     rospy.wait_for_service('/vision/obj_reco/detect_and_recognize_object')
     print("Services are now available.")
 
+    # Iniciar grabación de rosbag
+    bag = rosbag.Bag('robot_tasks.bag', 'w')
+
     executing_task = False
     current_state = "SM_INIT"
     new_task = False
     goal_reached = False
-
+    start_time = time.time()
     while not rospy.is_shutdown():
+        state_start_time = time.time()
         if current_state == "SM_INIT":
-            print("Waiting for new task")
+            rospy.loginfo("Waiting for new task")
             current_state = "SM_WAITING_NEW_TASK"
+
         elif current_state == "SM_WAITING_NEW_TASK":
             if new_task:
                 requested_object, requested_location = parse_command(recognized_speech)
-                print("New task received: " + requested_object + " to " + str(requested_location))
+                rospy.loginfo("New task received: " + requested_object + " to  " + str(requested_location))
                 say("Executing the command, " + recognized_speech)
                 current_state = "SM_MOVE_HEAD"
                 new_task = False
                 executing_task = True
 
         elif current_state == "SM_MOVE_HEAD":
-            print("Moving head")
+            rospy.loginfo("Moving head")
             move_head(0, -1)
             current_state = "SM_FIND_OBJECT"
 
         elif current_state == "SM_FIND_OBJECT":
-            print("Trying to find: " + requested_object)
+            rospy.loginfo("Trying to find: " + requested_object)
             x, y, z = find_object(requested_object)
-            print("Found " + requested_object + " at " + str([x, y, z]))
+            if x is None or y is None or z is None:
+                rospy.logwarn("Failed to find object, retrying...")
+                continue
+            rospy.loginfo("Found " + requested_object + " at " + str([x, y, z]))
             current_state = "SM_TAKE_OBJECT"
 
         elif current_state == "SM_TAKE_OBJECT":
-            # Verificar el brazo adecuado
             target_frame = "shoulders_left_link" if requested_object == "pringles" else "shoulders_right_link"
             x, y, z = transform_point(x, y, z, target_frame=target_frame)
-            print("Transformed position: " + str([x, y, z]))
+            if x is None or y is None or z is None:
+                rospy.logwarn("Failed to transform point, retrying...")
+                continue
+            rospy.loginfo("Transformed position: " + str([x, y, z]))
+
+            z += 0.07
 
             if requested_object == "pringles":
-                # Lógica para el brazo izquierdo
-                print("Moving left arm to initial position...")
+                rospy.loginfo("Moving left arm to initial position...")
                 Q = get_la_polynomial_trajectory([-1, 0.2, 0, 1.55, 0, 1.16, 0], duration=4.0)
                 move_left_arm_with_trajectory(Q)
 
-                print("Opening left gripper")
+                rospy.loginfo("Opening left gripper")
                 move_left_gripper(1.0)
 
-                print("Moving left arm to position above the object...")
-                intermediate_z = z + 0.1  # Añadir 10 cm a la posición z para evitar colisiones
-                intermediate_x = x + 0.04
-                Q_above = calculate_inverse_kinematics_left(intermediate_x, y, intermediate_z, 0, -math.pi / 2, 0)
-                move_left_arm_with_trajectory(Q_above)
+                rospy.loginfo("Moving left arm to position above the object...")
+                intermediate_z = z + 0.07
+                Q = calculate_inverse_kinematics_left(x, y, intermediate_z, 0, -math.pi / 2, 0)
+                move_left_arm_with_trajectory(Q)
 
-                #print("Lowering left arm to grasp the object...")
-                #Q_lower = calculate_inverse_kinematics_left(x, y, z, 0, -math.pi / 2, 0)
-                #move_left_arm_with_trajectory(Q_lower)
+                rospy.loginfo("Lowering left arm to grasp the object...")
+                Q_lower = calculate_inverse_kinematics_left(x, y, z, 0, -math.pi / 2, 0)
+                move_left_arm_with_trajectory(Q_lower)
 
                 rospy.loginfo("Closing left gripper to grasp the object")
                 move_left_gripper(0.0)
 
             if requested_object == "drink":
-                # Lógica para el brazo derecho
-                print("Moving right arm to initial position...")
+                rospy.loginfo("Moving right arm to initial position...")
                 Q = get_ra_polynomial_trajectory([-1, 0.2, 0, 1.55, 0, 1.16, 0], duration=4.0)
                 move_right_arm_with_trajectory(Q)
 
-                print("Opening right gripper")
+                rospy.loginfo("Opening right gripper")
                 move_right_gripper(1.0)
 
-                print("Moving right arm to position above the object...")
-                intermediate_z = z + 0.07  # Añadir 7 cm a la posición z para evitar colisiones
-                Q_above = calculate_inverse_kinematics_right(x, y, intermediate_z, 0, -math.pi / 2, 0)
-                move_right_arm_with_trajectory(Q_above)
+                rospy.loginfo("Moving right arm to position above the object...")
+                intermediate_z = z + 0.07
+                Q = calculate_inverse_kinematics_right(x, y, intermediate_z, 0, -math.pi / 2, 0)
+                move_right_arm_with_trajectory(Q)
 
-                print("Lowering right arm to grasp the object...")
+                rospy.loginfo("Lowering right arm to grasp the object...")
                 Q_lower = calculate_inverse_kinematics_right(x, y, z, 0, -math.pi / 2, 0)
                 move_right_arm_with_trajectory(Q_lower)
 
@@ -298,8 +292,6 @@ def main():
                 move_right_gripper(0.0)
 
             current_state = "SM_NAVIGATE_TO_LOCATION"
-
-
 
         elif current_state == "SM_NAVIGATE_TO_LOCATION":
             rospy.loginfo("Navigating to " + str(requested_location))
@@ -341,6 +333,16 @@ def main():
             current_state = "SM_WAITING_NEW_TASK"
 
         loop.sleep()
+        state_end_time = time.time()
+        state_duration = state_end_time - state_start_time
+        rospy.loginfo(f"State {current_state} took {state_duration:.2f} seconds")
+
+    end_time = time.time()
+    total_duration = end_time - start_time
+    rospy.loginfo(f"Total task duration: {total_duration:.2f} seconds")
+
+    # Cerrar la grabación de rosbag
+    bag.close()
 
 if __name__ == '__main__':
     main()
