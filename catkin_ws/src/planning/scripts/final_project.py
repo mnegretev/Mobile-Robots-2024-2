@@ -387,9 +387,10 @@ def main():
             
         #Navigate to goal    
         elif current_state == "SM_NAVIGATE":
-            print("Changing position ...")
-            move_base(-5,0,0,2)
+            
+            move_base(-3,0,0,2)
             if requested_location == "table":
+                print("Changing position ...")
                 go_to_goal_pose(8.0,8.5)
                 if goal_reached == True:
                     #Getting ready to deliver
@@ -402,6 +403,7 @@ def main():
                     goal_reached = False
 
             elif requested_location == "kitchen":
+                }print("Changing position ...")
                 go_to_goal_pose(3.22, 9.72)
                 if goal_reached == True:
                     #Getting ready to deliver
