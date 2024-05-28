@@ -30,7 +30,7 @@ from vision_msgs.srv import *
 from manip_msgs.srv import *
 from hri_msgs.msg import *
 
-NAME = "FULL NAME"
+NAME = "Rocandio Montiel Jesús Alexis"
 
 #
 # Global variable 'speech_recognized' contains the last recognized sentence
@@ -233,7 +233,7 @@ def get_la_polynomial_trajectory(q, duration=2.0, time_step=0.05):
 #
 # Calls the service for calculating a polynomial trajectory for the right arm
 #
-def get_la_polynomial_trajectory(q, duration=5.0, time_step=0.05):
+def get_ra_polynomial_trajectory(q, duration=5.0, time_step=0.05):
     current_p = rospy.wait_for_message("/hardware/right_arm/current_pose", Float64MultiArray)
     current_p = current_p.data
     clt = rospy.ServiceProxy("/manipulation/polynomial_trajectory", GetPolynomialTrajectory)
@@ -297,9 +297,6 @@ def main():
     rospy.wait_for_service('/vision/obj_reco/detect_and_recognize_object')
     print("Services are now available.")
 
-    #
-    # FINAL PROJECT 
-    #
     executing_task = False
     current_state = "SM_INIT"
     new_task = False
@@ -317,9 +314,56 @@ def main():
                 new_task = False
                 executing_task = True
                 
-        
+        elif current_state == "SM_MOVE_HEAD":
+            print("Moving head")
+            move_head(0,-1)
+            current_state = "SM_FIND_OBJECT"        
+
+        elif current_state == "SM_FIND_OBJECT":
+            print("Trying to find:" + requested_object)
+            x,y,z = find_object(requested_object)
+            print("Found" + requested_object + "at" + str([x,y,z]))
+            current_state="SM_TAKE_OBJECT"
+        elif current_state == "SM_TAKE_OBJECT":
+            x,y,z=transform_point(x,y,z)
+            print("Transformed position:" + str([x,y,z]))
+            print("Moving ARM")
+            Q = get_la_polynomial_trajectory([-1,0.2,0,1.55,0,1.16,0], duration=4.0)
+            move_left_arm_with_trajectory(Q)
+            print("Opening gripper")
+            move_left_gripper(1.0)
+            print("Calculating inverse kinematics")
+            Q = calculate_inverse_kinematics_left(x,y,z,0,-1.5,0)
+            move_left_arm_with_trajectory(Q)
+            time.sleep(5)
+            move_left_gripper(-1.0)
+            Q = get_la_polynomial_trajectory([-1,0.2,0,1.55,0,1.16,0], duration=4.0)
+            move_left_arm_with_trajectory(Q)
+            current_state = "SM_DELIVER"
+        elif current_state == "SM_NAVIGATE_TO_LOCATION":
+            print("Navigating to the location")
+            go_to_goal_pose(requested_location[0], requested_location[1])
+            while not goal_reached:
+                loop.sleep()
+            print("Arrived at the location")
+            say("Arrived at the destination")
+            current_state = "SM_DELIVER"
+        elif current_state == "SM_DELIVER":
+            say("Navigating to destination")
+            go_to_goal_pose(requested_location[0], requested_location[1])
+            current_state = "SM_WAIT_FOR_GOAL"
+        elif current_state == "SM_WAIT_FOR_GOAL":
+            if goal_reached:
+                print("Arrived at destination")
+                say("I have arrived at the destination")
+                goal_reached = False
+                current_state = "SM_RETURN_INITIAL"
+        elif current_state == "SM_RETURN_INITIAL":
+            print("Returning to initial state")
+            say("Returning to initial position")
+            current_state = "SM_INIT"
+            executing_task = False
         loop.sleep()
 
 if __name__ == '__main__':
     main()
-    
