@@ -388,6 +388,7 @@ def main():
         #Navigate to goal    
         elif current_state == "SM_NAVIGATE":
             print("Changing position ...")
+            move_base(-5,0,0,2)
             if requested_location == "table":
                 go_to_goal_pose(8.0,8.5)
                 if goal_reached == True:
@@ -398,6 +399,7 @@ def main():
                     #Hacia frente
                     move_base(1,0,1)
                     current_state = "SM_GOAL"
+                    goal_reached = False
 
             elif requested_location == "kitchen":
                 go_to_goal_pose(3.22, 9.72)
@@ -409,6 +411,7 @@ def main():
                     #Hacia frente
                     move_base(1,0,4)
                     current_state = "SM_GOAL"
+                    goal_reached = False
                 
         #Arrive to goal and leave object        
         elif current_state == "SM_GOAL":
