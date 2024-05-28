@@ -22,7 +22,7 @@ import time
 from std_msgs.msg import String, Float64MultiArray, Float64, Bool
 from sensor_msgs.msg import PointCloud2
 from geometry_msgs.msg import Twist, PoseStamped, PointStamped
-from trajectory_msgs.msg import JointTrajectory
+from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 from sound_play.msg import SoundRequest
 from vision_msgs.srv import RecognizeObject, RecognizeObjectRequest
 from manip_msgs.srv import InverseKinematicsPose2Traj, InverseKinematicsPose2TrajRequest, GetPolynomialTrajectory, GetPolynomialTrajectoryRequest
@@ -51,14 +51,14 @@ def callback_goal_reached(msg):
 
 def parse_command(cmd):
     obj = "pringles" if "PRINGLES" in cmd else "drink"
-    loc = [8.0,8.5] if "TABLE" in cmd else [3.22, 9.72]
+    loc = [8.0, 8.5] if "TABLE" in cmd else [3.22, 9.72]
     return obj, loc
 
 #
 # Esta función envía la posición articular objetivo al brazo izquierdo y duerme 2 segundos
 # para permitir que el brazo alcance la posición objetivo.
 #
-def move_left_arm(q1,q2,q3,q4,q5,q6,q7):
+def move_left_arm(q1, q2, q3, q4, q5, q6, q7):
     global pubLaGoalPose
     msg = Float64MultiArray()
     msg.data = [q1, q2, q3, q4, q5, q6, q7]
@@ -87,7 +87,7 @@ def move_left_gripper(q):
 # Esta función envía la posición articular objetivo al brazo derecho y duerme 2 segundos
 # para permitir que el brazo alcance la posición objetivo.
 #
-def move_right_arm(q1,q2,q3,q4,q5,q6,q7):
+def move_right_arm(q1, q2, q3, q4, q5, q6, q7):
     global pubRaGoalPose
     msg = Float64MultiArray()
     msg.data = [q1, q2, q3, q4, q5, q6, q7]
@@ -166,7 +166,7 @@ def say(text):
 # Esta función llama al servicio para calcular la cinemática inversa del brazo izquierdo
 # y devuelve la posición articular calculada.
 #
-def calculate_inverse_kinematics_left(x,y,z,roll, pitch, yaw):
+def calculate_inverse_kinematics_left(x, y, z, roll, pitch, yaw):
     req_ik = InverseKinematicsPose2TrajRequest()
     req_ik.x = x
     req_ik.y = y
@@ -185,7 +185,7 @@ def calculate_inverse_kinematics_left(x,y,z,roll, pitch, yaw):
 # Esta función llama al servicio para calcular la cinemática inversa del brazo derecho
 # y devuelve la posición articular calculada.
 #
-def calculate_inverse_kinematics_right(x,y,z,roll, pitch, yaw):
+def calculate_inverse_kinematics_right(x, y, z, roll, pitch, yaw):
     req_ik = InverseKinematicsPose2TrajRequest()
     req_ik.x = x
     req_ik.y = y
@@ -245,13 +245,13 @@ def find_object(object_name):
 #
 # Transforma un punto xyz expresado con respecto al marco fuente al marco objetivo
 #
-def transform_point(x,y,z, source_frame="realsense_link", target_frame="shoulders_left_link"):
+def transform_point(x, y, z, source_frame="realsense_link", target_frame="shoulders_left_link"):
     listener = tf.TransformListener()
     listener.waitForTransform(target_frame, source_frame, rospy.Time(), rospy.Duration(4.0))
     obj_p = PointStamped()
     obj_p.header.frame_id = source_frame
     obj_p.header.stamp = rospy.Time(0)
-    obj_p.point.x, obj_p.point.y, obj_p.point.z = x,y,z
+    obj_p.point.x, obj_p.point.y, obj_p.point.z = x, y, z
     obj_p = listener.transformPoint(target_frame, obj_p)
     return [obj_p.point.x, obj_p.point.y, obj_p.point.z]
 
@@ -266,10 +266,10 @@ def main():
     pubGoalPose = rospy.Publisher('/move_base_simple/goal', PoseStamped, queue_size=10)
     pubCmdVel   = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
     pubSay      = rospy.Publisher('/hri/speech_generator', SoundRequest, queue_size=10)
-    pubLaGoalPose = rospy.Publisher("/hardware/left_arm/goal_pose" , Float64MultiArray, queue_size=10)
+    pubLaGoalPose = rospy.Publisher("/hardware/left_arm/goal_pose", Float64MultiArray, queue_size=10)
     pubRaGoalPose = rospy.Publisher("/hardware/right_arm/goal_pose", Float64MultiArray, queue_size=10)
-    pubHdGoalPose = rospy.Publisher("/hardware/head/goal_pose"     , Float64MultiArray, queue_size=10)
-    pubLaGoalGrip = rospy.Publisher("/hardware/left_arm/goal_gripper" , Float64, queue_size=10)
+    pubHdGoalPose = rospy.Publisher("/hardware/head/goal_pose", Float64MultiArray, queue_size=10)
+    pubLaGoalGrip = rospy.Publisher("/hardware/left_arm/goal_gripper", Float64, queue_size=10)
     pubRaGoalGrip = rospy.Publisher("/hardware/right_arm/goal_gripper", Float64, queue_size=10)
     pubLaGoalTraj = rospy.Publisher("/manipulation/la_q_trajectory", JointTrajectory, queue_size=10)
     pubRaGoalTraj = rospy.Publisher("/manipulation/ra_q_trajectory", JointTrajectory, queue_size=10)
@@ -301,89 +301,89 @@ def main():
                 new_task = False
                 executing_task = True
 
-        #SM_MOVE_HEAD: Mueve la cabeza para localizar el objeto.
-        elif current_state == "SM_MOVE_HEAD": 
+        # SM_MOVE_HEAD: Mueve la cabeza para localizar el objeto.
+        elif current_state == "SM_MOVE_HEAD":
             print("Moving head")
-            move_head(0,-1)
+            move_head(0, -1)
             current_state = "SM_FIND_OBJECT"
 
-        #SM_FIND_OBJECT: Encuentra la posición del objeto usando la visión.
+        # SM_FIND_OBJECT: Encuentra la posición del objeto usando la visión.
         elif current_state == "SM_FIND_OBJECT":
             print("Trying to find: " + requested_object)
-            x,y,z = find_object(requested_object)
-            print("Found " + requested_object + "  at " + str([x,y,z]))
+            x, y, z = find_object(requested_object)
+            print("Found " + requested_object + "  at " + str([x, y, z]))
             current_state = "SM_TAKE_OBJECT"
 
-        #SM_TAKE_OBJECT: Transforma las coordenadas del objeto, mueve el brazo apropiado
-        #a la posición para agarrar el objeto, y cierra el gripper.
+        # SM_TAKE_OBJECT: Transforma las coordenadas del objeto, mueve el brazo apropiado
+        # a la posición para agarrar el objeto, y cierra el gripper.
         elif current_state == "SM_TAKE_OBJECT":
             # Verificar el brazo adecuado
             target_frame = "shoulders_left_link" if requested_object == "pringles" else "shoulders_right_link"
             x, y, z = transform_point(x, y, z, target_frame=target_frame)
             print("Transformed position: " + str([x, y, z]))
-            
+
             if requested_object == "pringles":
                 # Lógica para el brazo izquierdo
                 print("Moving left arm to initial position...")
                 Q = get_la_polynomial_trajectory([-1, 0.2, 0, 1.55, 0, 1.16, 0], duration=4.0)
                 move_left_arm_with_trajectory(Q)
-                
+
                 print("Opening left gripper")
                 move_left_gripper(1.0)
-                
+
                 print("Moving left arm to position above the object...")
                 intermediate_z = z + 0.1
                 Q = calculate_inverse_kinematics_left(x, y, intermediate_z, 0, -math.pi / 2, 0)
                 move_left_arm_with_trajectory(Q)
-                
+
                 print("Lowering left arm to grasp the object...")
-                positions = list(Q.points[-1].positions)
-                positions[2] = z
-                Q.points[-1].positions = tuple(positions)
+                Q.points[-1].positions = list(Q.points[-1].positions)
+                Q.points[-1].positions[2] = z
+                Q.points[-1].positions = tuple(Q.points[-1].positions)
                 move_left_arm_with_trajectory(Q)
-                
+
                 rospy.loginfo("Closing left gripper to grasp the object")
                 move_left_gripper(0.0)
-                
+
             if requested_object == "drink":
                 # Lógica para el brazo derecho
                 print("Moving right arm to initial position...")
                 Q = get_ra_polynomial_trajectory([-1, 0.2, 0, 1.55, 0, 1.16, 0], duration=4.0)
                 move_right_arm_with_trajectory(Q)
-                
+
                 print("Opening right gripper")
                 move_right_gripper(1.0)
-                
+
                 print("Moving right arm to position above the object...")
                 intermediate_z = z + 0.1
                 Q = calculate_inverse_kinematics_right(x, y, intermediate_z, 0, -math.pi / 2, 0)
                 move_right_arm_with_trajectory(Q)
-                
+
                 print("Lowering right arm to grasp the object...")
-                positions = list(Q.points[-1].positions)
-                positions[2] = z
-                Q.points[-1].positions = tuple(positions)
+                Q.points[-1].positions = list(Q.points[-1].positions)
+                Q.points[-1].positions[2] = z
+                Q.points[-1].positions = tuple(Q.points[-1].positions)
                 move_right_arm_with_trajectory(Q)
-                
+
                 rospy.loginfo("Closing right gripper to grasp the object")
                 move_right_gripper(0.0)
 
             current_state = "SM_NAVIGATE_TO_LOCATION"
 
-        #SM_NAVIGATE_TO_LOCATION: Navega hacia la ubicación solicitada.
+        # SM_NAVIGATE_TO_LOCATION: Navega hacia la ubicación solicitada.
         elif current_state == "SM_NAVIGATE_TO_LOCATION":
             rospy.loginfo("Navigating to " + str(requested_location))
             go_to_goal_pose(requested_location[0], requested_location[1])
             current_state = "SM_WAIT_GOAL_REACHED"
 
-        #SM_WAIT_GOAL_REACHED: Espera hasta que el robot haya llegado a la ubicación solicitada.
+        # SM_WAIT_GOAL_REACHED: Espera hasta que el robot haya llegado a la ubicación solicitada.
         elif current_state == "SM_WAIT_GOAL_REACHED":
             if goal_reached:
                 rospy.loginfo("Goal reached")
                 current_state = "SM_PLACE_OBJECT"
                 goal_reached = False
 
-        #SM_PLACE_OBJECT: Coloca el objeto en la ubicación, abre el gripper y retrae el brazo.
+        # SM_PLACE_OBJECT: Coloca el objeto en la ubicación, abre el gripper y retrae el brazo.
         elif current_state == "SM_PLACE_OBJECT":
             if requested_object == "pringles":
                 rospy.loginfo("Placing object at the destination")
@@ -403,11 +403,11 @@ def main():
                 rospy.loginfo("Retracting right arm")
                 Q = get_ra_polynomial_trajectory([0, 0.2, 0, 0.5, 0, 0.0, 0], duration=4.0)
                 move_right_arm_with_trajectory(Q)
-            
+
             say("Task completed. The " + requested_object + " has been delivered.")
             current_state = "SM_TASK_COMPLETED"
 
-        #SM_TASK_COMPLETED: Indica que la tarea ha sido completada y está esperando nuevas tareas.
+        # SM_TASK_COMPLETED: Indica que la tarea ha sido completada y está esperando nuevas tareas.
         elif current_state == "SM_TASK_COMPLETED":
             rospy.loginfo("Task completed. Waiting for new tasks.")
             executing_task = False
