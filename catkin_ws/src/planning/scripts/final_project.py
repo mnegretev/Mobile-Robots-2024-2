@@ -347,26 +347,25 @@ def main():
                 print("Calculating inverse kinematics...")
                 Q = calculate_inverse_kinematics_left(x+0.05,y,z+0.1,0,-1.5,0)
                 move_left_arm_with_trajectory(Q)
-                time.sleep(4)
+                time.sleep(2)
                 move_left_gripper(-0.5)
                 Q = get_la_polynomial_trajectory([-1, 0.2, 0, 1.5, 0, 1.16, 0], duration=4.0)
                 move_left_arm_with_trajectory(Q)
                 
             #Right arm if drink
             elif requested_object == "drink":
-                x,y,z = transform_point(x,y,z,"realsense_link","shoulders_right_link")
-                Q = get_ra_polynomial_trajectory([-0.55,0.15,0.1,1.5,1.0,0,0], duration=1.5)
-                move_right_arm_with_trajectory(Q)
-                print("Openning gripper ...")
+                print("Openning gripper")
                 move_right_gripper(1.0)
-                print("Calculating inverse kinematics ...")
-                Q = calculate_inverse_kinematics_right(x,y,z,0,-1.5,0)
+                print("Moving arm... ")
+                Q = get_ra_polynomial_trajectory([-1, 0.2, 0, 1.55, 0, 1.16, 0], duration=4.0)
                 move_right_arm_with_trajectory(Q)
-                print("Closing griper ...")
-                move_right_gripper(-0.1)
-                print("Retriving object...")
-                Q = get_ra_polynomial_trajectory([-0.7,0.2,0,1.55,0,1.16,0], duration=4.0)
+                print("Calculating inverse kinematics...")
+                Q = calculate_inverse_kinematics_right(x+0.03,y,z+0.1,0,-1.5,0)
                 move_right_arm_with_trajectory(Q)
+                time.sleep(2)
+                move_left_gripper(-0.5)
+                Q = get_la_polynomial_trajectory([-1, 0.2, 0, 1.5, 0, 1.16, 0], duration=4.0)
+                move_left_arm_with_trajectory(Q)
                 #move_base(0,1,0,1)
                 #time.sleep(2)
                 #x,y,x = transform_point(x,y,z,"realsense_link","shoulders_right_link")
@@ -385,35 +384,30 @@ def main():
                 #move_right_arm_with_trajectory(Q)
             current_state = "SM_NAVIGATE"
             
-        #Navigate to goal    
+        #Navigate to goal
         elif current_state == "SM_NAVIGATE":
-            
-            move_base(-3,0,0,2)
-            if requested_location == "table":
-                print("Changing position ...")
-                go_to_goal_pose(8.0,8.5)
-                if goal_reached == True:
-                    #Getting ready to deliver
-                    print("Moving base for delivery ...")
-                    #Giro a la derecha
-                    move_base(0,-1,1)
-                    #Hacia frente
-                    move_base(1,0,1)
-                    current_state = "SM_GOAL"
-                    goal_reached = False
+        if requested_location == "table":
+            print("Changing position to table...")
+            go_to_goal_pose(8.0, 8.5)
+            if goal_reached:  # Check if the goal has been reached
+                print("Goal reached")
+                print("Moving base for delivery...")
+                move_base(0, -1, 1)  # Rotate to the right
+                move_base(1, 0, 1)  # Move forward
+                current_state = "SM_GOAL"
+                goal_reached = False
 
-            elif requested_location == "kitchen":
-                }print("Changing position ...")
-                go_to_goal_pose(3.22, 9.72)
-                if goal_reached == True:
-                    #Getting ready to deliver
-                    print("Moving base for delivery ...")
-                    #Giro a la izquierda
-                    move_base(0, -0.5, 1)
-                    #Hacia frente
-                    move_base(1,0,4)
-                    current_state = "SM_GOAL"
-                    goal_reached = False
+        elif requested_location == "kitchen":
+            print("Changing position to kitchen...")
+            go_to_goal_pose(3.22, 9.72)
+            if goal_reached:  # Check if the goal has been reached
+                print("Goal reached")
+                print("Moving base for delivery...")
+                move_base(0, -0.5, 1)  # Rotate to the left
+                move_base(1, 0, 4)  # Move forward
+                current_state = "SM_GOAL"
+                goal_reached = False
+    
                 
         #Arrive to goal and leave object        
         elif current_state == "SM_GOAL":
