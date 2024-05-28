@@ -277,11 +277,11 @@ def main():
     global pubLaGoalTraj, pubRaGoalTraj, pubGoalPose, pubCmdVel, pubSay
     print("FINAL PROJECT - " + NAME)
     rospy.init_node("final_project")
-    rospy.Subscriber('/hri/sp_rec/recognized', RecognizedSpeech, callback_recognized_speech)
+    #rospy.Subscriber('/hri/sp_rec/recognized', RecognizedSpeech, callback_recognized_speech)
     rospy.Subscriber('/navigation/goal_reached', Bool, callback_goal_reached)
     pubGoalPose = rospy.Publisher('/move_base_simple/goal', PoseStamped, queue_size=10)
     pubCmdVel   = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
-    pubSay      = rospy.Publisher('/hri/speech_generator', SoundRequest, queue_size=10)
+    #pubSay      = rospy.Publisher('/hri/speech_generator', SoundRequest, queue_size=10)
     pubLaGoalPose = rospy.Publisher("/hardware/left_arm/goal_pose" , Float64MultiArray, queue_size=10);
     pubRaGoalPose = rospy.Publisher("/hardware/right_arm/goal_pose", Float64MultiArray, queue_size=10);
     pubHdGoalPose = rospy.Publisher("/hardware/head/goal_pose"     , Float64MultiArray, queue_size=10);
@@ -304,161 +304,95 @@ def main():
     current_state = "SM_INIT"
     new_task = False
     goal_reached = False
-    #Hacer alguna de la siguiente ordenes "True" para su realización,
-    #la demás deben de estar en "False"
-    P_T = False  #Robot take the pringles to the table
-    D_T = False  #Robot take the drink to the table
-    P_K = True  #Robot take the pringles to the kitchen
-    D_K = False  #Robot take the drink to the kitchen
-    #table = [8.0,8.5]
-    #kitchen = [3.22, 9.72]
-
     while not rospy.is_shutdown():
         if current_state == "SM_INIT":
             print("Waiting for new task")
             current_state = "SM_WAITING_NEW_TASK"
+            new_task = True
         
         elif current_state == "SM_WAITING_NEW_TASK":
-            #Control de voz por reconocimiento de voz
-            # if new_task:
-            #     requested_object, requested_location = parse_command(recognized_speech)
-            #     print("New task received: " + requested_object + " to  " + str(requested_location))
-            #     say("Executing the command, " + recognized_speech)
-            #     current_state = "SM_MOVE_HEAD"
-            #     new_task = False
-            #     executing_task = True
-            #Comentar las siguientes lineas si se desea utilizar reconocimiento de voz
-            if P_T:
-                requested_object, requested_location = "pringles" , "table"
+            if new_task:
+                # requested_object, requested_location = parse_command(recognized_speech)
+                requested_object, requested_location = "pringles", [3.22, 9.72]
                 print("New task received: " + requested_object + " to  " + str(requested_location))
-                say("Executing the command, " + "Robot take the pringles to the table")
+                # say("Executing the command, " + recognized_speech)
+                print("Executing the command, ROBOT TAKE THE PRINGLES TO THE KITCHEN")
                 current_state = "SM_MOVE_HEAD"
                 new_task = False
                 executing_task = True
-            if D_T:
-                requested_object, requested_location = "drink" , "table"
-                print("New task received: " + requested_object + " to  " + str(requested_location))
-                say("Executing the command, " + "Robot take the drink to the table")
-                current_state = "SM_MOVE_HEAD"
-                new_task = False
-                executing_task = True
-            if P_K:
-                requested_object, requested_location = "pringles" , "kitchen"
-                print("New task received: " + requested_object + " to  " + str(requested_location))
-                say("Executing the command, " + "Robot take the pringles to the kitchen")
-                current_state = "SM_MOVE_HEAD"
-                new_task = False
-                executing_task = True
-            if D_K:
-                requested_object, requested_location = "drink" , "kitchen"
-                print("New task received: " + requested_object + " to  " + str(requested_location))
-                say("Executing the command, " + "Robot take the drink to the kitchen")
-                current_state = "SM_MOVE_HEAD"
-                new_task = False
-                executing_task = True
-            
-
+                
         elif current_state == "SM_MOVE_HEAD":
             print("Moving head")
             move_head(0,-1)
-            current_state = "SM_FIND_OBJECT"
-        
-        elif current_state == "SM_FIND_OBJECT":
-            print("Trying to find: " + requested_object)
+            current_state = "FIND_OBJECT"
+           
+        elif current_state == "FIND_OBJECT":
+            print("Trying to find " + requested_object)
             x,y,z = find_object(requested_object)
-            print("Found" + requested_object + "at" + str([x,y,z]))
-            current_state = "SM_TAKE_OBJECT"
+            print("Found " + requested_object + " at " + str([x,y,z]))
+            current_state = "TAKE_OBJECT"
+        elif current_state == "TAKE_OBJECT":
 
-        elif current_state == "SM_TAKE_OBJECT":
             x,y,z = transform_point(x,y,z)
-            print("Transformed position " + str([x,y,z]))
-            print("Moving arm ...")
-            #[-1,0.2,0,1.55,0,1.16,0] Predefinida
-            #[-1,0.2,0,1.75,0,1.16,0] Mejor ¿?
-            #[0,0.2,0,1.6,0,1,0]
-            #[0.5,0,0,2.5,0,-0.5,0]
+            print("Transformed position: " + str([x,y,z]))
+            print("Moving arm...")
+            Q = get_la_polynomial_trajectory([-1,0.2,0,1.55,0,1.16,0],duration=4.0)
+            move_left_arm_with_trajectory(Q)
+            print("Openning gripper")
+            move_left_gripper(1.0)
+            print("Calculating inverse kinematics...")
+            Q = calculate_inverse_kinematics_left(x,y,z,0,-1.5,0)
+            move_left_arm_with_trajectory(Q)
+            move_left_gripper(-0.1)
+
             if requested_object == "pringles":
-                Q = get_la_polynomial_trajectory([0.5,0,0,2.5,0,-0.5,0], duration=1.0)
+                x,y,z = transform_point(x,y,z)
+                print("Transformed position: " + str([x,y,z]))
+                print("Moving arm...")
+                Q = get_la_polynomial_trajectory([-1.2,0.2,-0.01,1.55,0,1.16,0],duration=4.0)
                 move_left_arm_with_trajectory(Q)
-                print("Openning gripper ...")
+                print("Openning gripper")
                 move_left_gripper(1.0)
-                print("Calculating inverse kinematics ...")
+                print("Calculating inverse kinematics...")
                 Q = calculate_inverse_kinematics_left(x,y,z,0,-1.5,0)
                 move_left_arm_with_trajectory(Q)
-                print("Closing griper ...")
                 move_left_gripper(-0.1)
-                print("Retriving object...")
-                Q = get_la_polynomial_trajectory([-0.7,0.2,0,1.55,0,1.16,0], duration=4.0)
-                move_left_arm_with_trajectory(Q)
-
-            elif requested_object == "drink":
-                #Nueva transoformación de brazo izquierdo
-                x,y,z = transform_point(x,y,z,"realsense_link","shoulders_right_link")
-                Q = get_ra_polynomial_trajectory([-0.55,0.15,0.1,1.5,1.0,0,0], duration=1.5)
+            else:
+                x,y,z= transform_point(x,y,z,"realsense_link","shoulders_right_link")
+                print("Transformed position: " + str([x,y,z]))
+                print("Moving arm...")
+                move_base(-2,0,0)
+                Q = get_ra_polynomial_trajectory([-0.9,-0.2,0,1.3,0.8,0.05,0],duration=4.0)
                 move_right_arm_with_trajectory(Q)
-                print("Openning gripper ...")
+                
+                print("Openning gripper")
                 move_right_gripper(1.0)
-                print("Calculating inverse kinematics ...")
+                print("Calculating inverse kinematics...")
                 Q = calculate_inverse_kinematics_right(x,y,z,0,-1.5,0)
                 move_right_arm_with_trajectory(Q)
-                print("Closing griper ...")
                 move_right_gripper(-0.1)
-                print("Retriving object...")
-                Q = get_ra_polynomial_trajectory([-0.7,0.2,0,1.55,0,1.16,0], duration=4.0)
-                move_right_arm_with_trajectory(Q)
-
-            current_state = "SM_CHANGE_POSITION"
-
-        elif current_state == "SM_CHANGE_POSITION":
-            print("Changing position ...")
-            #Change location
-            if requested_location == "table":
-                go_to_goal_pose(8.0,8.5)
-                if goal_reached == True:
-                    #Getting ready to deliver
-                    print("Goal reached")
-                    print("Moving base for delivery ...")
-                    #Giro a la derecha
-                    move_base(0,-1,1)
-                    #Movimiento al frente
-                    move_base(1,0,1)
-                    current_state = "SM_OBJECT_DELIVER"
-
-            elif requested_location == "kitchen":
-                go_to_goal_pose(3.22, 9.72)
-                if goal_reached == True:
-                    #Getting ready to deliver
-                    print("Goal reached")
-                    print("Moving base for delivery ...")
-                    #Giro a la izquierda
-                    move_base(0, -0.5, 1)
-                    #Movimiento al frente
-                    move_base(1,0,4)
-                    current_state = "SM_OBJECT_DELIVER"
-            
-        elif current_state == "SM_OBJECT_DELIVER":
-            print("Delivering Object ...")
-            print("Moving arm for delivery")
-
+                
+            current_state = "DELIVER"
+        elif current_state == "DELIVER":
+            if not goal_reached:
+                go_to_goal_pose(requested_location[0],requested_location[1])
+            elif goal_reached:
+                executing_task = False
+                current_state = "FINISH"
+        elif current_state == "FINISH":
             if requested_object == "pringles":
-                Q = get_la_polynomial_trajectory([0.7,0,0,1.55,0,-0.5,0], duration=5.0)
-                move_left_arm_with_trajectory(Q)
-                print("Opening gripper")
-                move_left_gripper(1.0)
-
-            elif requested_object == "drink":
-                Q = get_ra_polynomial_trajectory([0.7,0,0,1.55,-0.5,0,0], duration=5.0)
-                move_right_arm_with_trajectory(Q)
-                print("Opening gripper")
-                move_right_gripper(1.0)
-    
-            say("I have delivered what you ordered")
-            #PT = False
+                move_left_gripper(0.4)
+            else:
+                move_right_gripper(0.4)
+            current_state = "SM_INIT"
             break
-            #current_state = "SM_WAITING_NEW_TASK"
+        else:
+            print("ERROR,arriba el cruz azul ")
+            break;
+            
         
-       
         loop.sleep()
 
 if __name__ == '__main__':
     main()
+    
