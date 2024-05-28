@@ -321,46 +321,73 @@ def main():
         elif current_state == "SM_MOVE_HEAD":
             print("Moving head")
             move_head(0,-1)
-            current_state = "FIND_OBJECT"
+            current_state = "SM_FIND_OBJECT"
            
-        elif current_state == "FIND_OBJECT":
+        elif current_state == "SM_FIND_OBJECT":
             print("Trying to find " + requested_object)
             x,y,z = find_object(requested_object)
             print("Found " + requested_object + "at " + str([x,y,z]))
             current_state = "TAKE_OBJECT"
             
-        elif current_state == "TAKE_OBJECT":
-            x,y,x = transform_point(x,y,z)
-            print("Transformed position: " + str([x,y,z]))
-            print("Moving arm...")
-            Q = get_la_polynomial_trajectory([-1,0.2,0,1.55,0,1.16,0],duration=4.0)
-            move_left_arm_with_trajectory(Q)
-            print("Openning gripper")
-            move_left_gripper(1.0)
-            print("Calculating inverse kinematics...")
-            Q = calculate_inverse_kinematics_left(x,y,z,0,-1.5,0)
-            move_left_arm_with_trajectory(Q)
-            move_left_gripper(-0.1)
-            current_state = "MOVE_TO_LOCATION"
+        elif current_state == "SM_TAKE_OBJECT":
+            if requested_object == "pringles":
+                x,y,x = transform_point(x,y,z)
+                print("Transformed position: " + str([x,y,z]))
+                print("Moving arm...")
+                Q = get_la_polynomial_trajectory([-1,0.2,0,1.55,0,1.16,0],duration=4.0)
+                move_left_arm_with_trajectory(Q)
+                print("Openning gripper")
+                move_left_gripper(1.0)
+                print("Calculating inverse kinematics...")
+                move_left_gripper(-0.1)
+                Q = calculate_inverse_kinematics_left(x,y,z,0,-1.5,0)
+                move_left_arm_with_trajectory(Q)
+                
+            else: 
+                x,y,x = transform_point(x,y,z)
+                print("Transformed position: " + str([x,y,z]))
+                print("Moving arm...")
+                Q = get_la_polynomial_trajectory([-1,0.2,0,1.55,0,1.16,0],duration=4.0)
+                move_right_arm_with_trajectory(Q)
+                print("Openning gripper")
+                move_right_gripper(1.0)
+                print("Calculating inverse kinematics...")
+                move_right_gripper(-0.1)
+                Q = calculate_inverse_kinematics_right(x,y,z,0,-1.5,0)
+                move_right_arm_with_trajectory(Q)
+                    
+            current_state = "SM_MOVE_TO_LOCATION"
 
-        elif current_state == "MOVE_TO_LOCATION":
+        elif current_state == "SM_MOVE_TO_LOCATION":
             print("moving to: " + str[requested_location])
             go_to_goal_pose(requested_location)
             print("arriving at requested_location")
-            current_state = "LEAVE_OBJECT"
+            current_state = "SM_LEAVE_OBJECT"
 
-        elif current_state == "LEAVE_OBJECT":
-            x,y,x = transform_point(x,y,z)
-            print("Transformed position: " + str([x,y,z]))
-            print("Moving arm...")
-            Q = get_la_polynomial_trajectory([-1,0.2,0,1.55,0,1.16,0],duration=4.0)
-            move_left_arm_with_trajectory(Q)
-            print("Moving object")
-            #move_left_gripper(1.0)
-            print("Calculating inverse kinematics...")
-            Q = calculate_inverse_kinematics_left(x,y,z,0,-1.5,0)
-            move_left_arm_with_trajectory(Q)
-            move_left_gripper(1.0) #????????
+        elif current_state == "SM_LEAVE_OBJECT":
+            if requested_object == "pringles":
+                x,y,x = transform_point(x,y,z)
+                print("Transformed position: " + str([x,y,z]))
+                print("Moving arm...")
+                Q = get_la_polynomial_trajectory([-1,0.2,0,1.55,0,1.16,0],duration=4.0)
+                move_left_arm_with_trajectory(Q)
+                print("Openning gripper")
+                move_left_gripper(1.0)
+                print("Calculating inverse kinematics...")
+                Q = calculate_inverse_kinematics_left(x,y,z,0,-1.5,0)
+                move_left_arm_with_trajectory(Q)
+                move_left_gripper(-0.1)
+            else: 
+                x,y,x = transform_point(x,y,z)
+                print("Transformed position: " + str([x,y,z]))
+                print("Moving arm...")
+                Q = get_la_polynomial_trajectory([-1,0.2,0,1.55,0,1.16,0],duration=4.0)
+                move_right_arm_with_trajectory(Q)
+                print("Openning gripper")
+                move_right_gripper(1.0)
+                print("Calculating inverse kinematics...")
+                Q = calculate_inverse_kinematics_right(x,y,z,0,-1.5,0)
+                move_right_arm_with_trajectory(Q)
             current_state = "SM_WAITING_NEW_TASK"
             
         
