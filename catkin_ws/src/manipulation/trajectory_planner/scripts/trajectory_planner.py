@@ -42,7 +42,7 @@ def get_polynomial_trajectory(q0, q1, dq0=0, dq1=0, ddq0=0, ddq1=1, t=1.0, step=
          [       0,          0,       0,        2,      0,  0]]
     A = numpy.asarray(A)
     B = numpy.asarray([q1, dq1, ddq1, q0, dq0, ddq0]).T
-    X = numpy.dot (numpy.linalg.inv(A),B)
+    X = numpy.dot ( numpy.linalg.inv(A),B)
     [a5, a4, a3, a2, a1, a0] = X
     print ([a5, a4, a3, a2, a1, a0])
     T = numpy.arange(0,t,step)
