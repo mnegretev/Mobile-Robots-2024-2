@@ -310,6 +310,7 @@ def main():
         if current_state == "SM_INIT":
             print("Waiting for new task")
             current_state = "SM_WAITING_NEW_TASK"
+
         elif current_state == "SM_WAITING_NEW_TASK":
             if new_task:
                 requested_object, requested_location = parse_command(recognized_speech)
@@ -321,14 +322,10 @@ def main():
                 new_task = False
                 executing_task = True
             
-        #************ A veces no baja la cabeza :c #************
-        #Move head to object location
         elif current_state == "SM_MOVE_HEAD":
             print("Moving head")
-            move_head(0,-0.8)
-            print("Moving head, finish")
+            move_head(0,-1)
             current_state = "SM_FIND_OBJECT"
-            #move_head(0,0)
             
         #Find position of the object using vision
         elif current_state == "SM_FIND_OBJECT":
@@ -339,43 +336,55 @@ def main():
             
         #Move arm to object position
         elif current_state == "SM_TAKE_OBJECT":
+            x, y, z = transform_point(x, y, z)
+            print("Transformed position: " + str([x, y, z]))
             #Left arm if pringles
             if requested_object == "pringles":
-                x, y, z = transform_point(x, y, z)
-                print("Transformed position: " + str([x, y, z]))
+                
                 print("Openning gripper")
                 move_left_gripper(1.0)
                 print("Moving arm... ")
-                Q = get_la_polynomial_trajectory([-1, 0.2, 0, 1.5, 0, 1.16, 0], duration=4.0)
+                Q = get_la_polynomial_trajectory([-1, 0.2, 0, 1.55, 0, 1.16, 0], duration=4.0)
                 move_left_arm_with_trajectory(Q)
                 print("Calculating inverse kinematics...")
-                Q = calculate_inverse_kinematics_left(x+0.05,y,z+0.2,0,-1.5,0)
+                Q = calculate_inverse_kinematics_left(x+0.05,y,z+0.1,0,-1.5,0)
                 move_left_arm_with_trajectory(Q)
-                time.sleep(6)
+                time.sleep(4)
                 move_left_gripper(-0.5)
                 Q = get_la_polynomial_trajectory([-1, 0.2, 0, 1.5, 0, 1.16, 0], duration=4.0)
                 move_left_arm_with_trajectory(Q)
                 
             #Right arm if drink
-            else:
-                #**********************************SGYC*****************************************#
-                #No funciona para "drink" no calcula la cinematica inversa para poder agarrarla.
-                move_base(0,1,0,1)
-                time.sleep(2)
-                x,y,x = transform_point(x,y,z,"realsense_link","shoulders_right_link")
-                print("Openning gripper")
+            elif requested_object == "drink":
+                x,y,z = transform_point(x,y,z,"realsense_link","shoulders_right_link")
+                Q = get_ra_polynomial_trajectory([-0.55,0.15,0.1,1.5,1.0,0,0], duration=1.5)
+                move_right_arm_with_trajectory(Q)
+                print("Openning gripper ...")
                 move_right_gripper(1.0)
-                print("Transformed position: " + str([x,y,z]))
-                print("Moving arm...")
-                Q = get_la_polynomial_trajectory([-1, 0.2, 0, 1.5, 1, 0, 0], duration=4.0)
+                print("Calculating inverse kinematics ...")
+                Q = calculate_inverse_kinematics_right(x,y,z,0,-1.5,0)
                 move_right_arm_with_trajectory(Q)
-                print("Calculating inverse kinematics...")
-                Q = calculate_inverse_kinematics_right(x+0.04,y,z+0.2,0,-1.5,0)
+                print("Closing griper ...")
+                move_right_gripper(-0.1)
+                print("Retriving object...")
+                Q = get_ra_polynomial_trajectory([-0.7,0.2,0,1.55,0,1.16,0], duration=4.0)
                 move_right_arm_with_trajectory(Q)
-                time.sleep(4)
-                move_right_gripper(-0.5)
-                Q = get_la_polynomial_trajectory([-1, 0.2, 0, 1.5, 0, 1.16, 0], duration=4.0)
-                move_right_arm_with_trajectory(Q)
+                #move_base(0,1,0,1)
+                #time.sleep(2)
+                #x,y,x = transform_point(x,y,z,"realsense_link","shoulders_right_link")
+                #print("Openning gripper")
+                #move_right_gripper(1.0)
+                #print("Transformed position: " + str([x,y,z]))
+                #print("Moving arm...")
+                #Q = get_la_polynomial_trajectory([-1, 0.2, 0, 1.5, 1, 0, 0], duration=4.0)
+                #move_right_arm_with_trajectory(Q)
+                #print("Calculating inverse kinematics...")
+                #Q = calculate_inverse_kinematics_right(x+0.04,y,z+0.2,0,-1.5,0)
+                #move_right_arm_with_trajectory(Q)
+                #time.sleep(4)
+                #move_right_gripper(-0.5)
+                #Q = get_la_polynomial_trajectory([-1, 0.2, 0, 1.5, 0, 1.16, 0], duration=4.0)
+                #move_right_arm_with_trajectory(Q)
             current_state = "SM_NAVIGATE"
             
         #Navigate to goal    
