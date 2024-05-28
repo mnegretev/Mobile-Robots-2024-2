@@ -325,8 +325,8 @@ def main():
             x, y, z = transform_point(x, y, z, target_frame=target_frame)
             print("Transformed position: " + str([x, y, z]))
 
-            # Añadir 10 cm a la posición z para evitar colisiones
-            z += 0.10
+            # Añadir 7 cm a la posición z para evitar colisiones
+            z += 0.07
 
             if requested_object == "pringles":
                 # Lógica para el brazo izquierdo
