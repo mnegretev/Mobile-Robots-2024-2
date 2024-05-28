@@ -20,28 +20,38 @@ from sensor_msgs.msg import PointCloud2
 from geometry_msgs.msg import PointStamped, Point
 from vision_msgs.srv import RecognizeObject, RecognizeObjectResponse
 
-NAME = "FULL_NAME"
+NAME = "BAFO SEMICONDUCTORS INC."
 
 def segment_by_color(img_bgr, points, obj_name):
-    img_x, img_y, x,y,z = 0,0,0,0,0
+    img_x, img_y, x, y, z = 0, 0, 0, 0, 0
     #
     # TODO:
     # - Assign lower and upper color limits according to the requested object:
-    #   If obj_name == 'pringles': [25, 50, 50] - [35, 255, 255]
-    #   otherwise                : [10,200, 50] - [20, 255, 255]
+    if obj_name == 'pringles':
+        lower_color = numpy.array([25, 50, 50])
+        upper_color = numpy.array([35, 255, 255])
+    else:
+        lower_color = numpy.array([10, 200, 50])
+        upper_color = numpy.array([20, 255, 255])
+
     # - Change color space from RGB to HSV.
-    #   Check online documentation for cv2.cvtColor function
+    img_hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
+
     # - Determine the pixels whose color is in the selected color range.
-    #   Check online documentation for cv2.inRange
+    mask = cv2.inRange(img_hsv, lower_color, upper_color)
+
     # - Calculate the centroid of all pixels in the given color range (ball position).
-    #   Check online documentation for cv2.findNonZero and cv2.mean
-    # - Calculate the centroid of the segmented region in the cartesian space
-    #   using the point cloud 'points'. Use numpy array notation to process the point cloud data.
-    #   Example: 'points[240,320][1]' gets the 'y' value of the point corresponding to
-    #   the pixel in the center of the image.
-    #
-    
-    return [img_x, img_y, x,y,z]
+    points_nonzero = cv2.findNonZero(mask)
+    if points_nonzero is not None:
+        mean = cv2.mean(points_nonzero)
+        img_x, img_y = int(mean[0]), int(mean[1])
+
+        # - Calculate the centroid of the segmented region in the cartesian space
+        x = points[img_y, img_x]['x']
+        y = points[img_y, img_x]['y']
+        z = points[img_y, img_x]['z']
+
+    return [img_x, img_y, x, y, z]
 
 def callback_find_object(req):
     global pub_point, img_bgr
@@ -52,11 +62,11 @@ def callback_find_object(req):
     r = numpy.asarray(((rgb_arr >> 16) & 255), dtype='uint8')
     g = numpy.asarray(((rgb_arr >>  8) & 255), dtype='uint8')
     b = numpy.asarray(((rgb_arr      ) & 255), dtype='uint8')
-    img_bgr = cv2.merge((b,g,r))
+    img_bgr = cv2.merge((b, g, r))
     [r, c, x, y, z] = segment_by_color(img_bgr, arr, req.name)
     resp = RecognizeObjectResponse()
     resp.recog_object.header.frame_id = 'realsense_link'
-    resp.recog_object.header.stamp    = rospy.Time.now()
+    resp.recog_object.header.stamp = rospy.Time.now()
     resp.recog_object.pose.position.x = x
     resp.recog_object.pose.position.y = y
     resp.recog_object.pose.position.z = z
@@ -82,4 +92,3 @@ if __name__ == '__main__':
         main()
     except rospy.ROSInterruptException:
         pass
-

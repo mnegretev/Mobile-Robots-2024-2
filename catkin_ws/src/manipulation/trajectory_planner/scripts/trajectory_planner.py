@@ -21,31 +21,21 @@ from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 prompt = ""
 NAME = "BAFO SEMICONDUCTORS INC. "
 
-def get_polynomial_trajectory(q0, q1, dq0=0, dq1=0, ddq0=0, ddq1=0, t=1.0, step=0.05):
-    T = numpy.arange(0, t + step, step)
+def get_polynomial_trajectory(q0, q1, dq0=0, dq1=0, ddq0=0, ddq1=1, t=1.0, step=0.05):
+    T = numpy.arange(0, t, step)
     Q = numpy.zeros(T.shape)
-
-    # Define the time matrix for boundary conditions
-    time_matrix = numpy.array([
-        [1, 0, 0, 0, 0, 0],
-        [1, t, t**2, t**3, t**4, t**5],
-        [0, 1, 0, 0, 0, 0],
-        [0, 1, 2*t, 3*t**2, 4*t**3, 5*t**4],
-        [0, 0, 2, 0, 0, 0],
-        [0, 0, 2, 6*t, 12*t**2, 20*t**3]
-    ])
-    
-    # Define the boundary conditions vector
-    boundary_conditions = numpy.array([q0, q1, dq0, dq1, ddq0, ddq1])
-    
-    # Solve for the polynomial coefficients
-    coefficients = numpy.linalg.solve(time_matrix, boundary_conditions)
-    
-    # Calculate the trajectory
-    for i in range(len(T)):
-        Q[i] = (coefficients[0] + coefficients[1] * T[i] + coefficients[2] * T[i]**2 + 
-                coefficients[3] * T[i]**3 + coefficients[4] * T[i]**4 + coefficients[5] * T[i]**5)
-    
+    A = [[   t**5,    t**4,   t**3, t**2, t, 1],
+         [ 5*t**4,  4*t**3, 3*t**2,  2*t, 1 ,0],
+         [20*t**3, 12*t**2,    6*t,    2, 0, 0],
+         [      0,       0,      0,    0, 0, 1],
+         [      0,       0,      0,    0, 1, 0],
+         [      0,       0,      0,    2, 0, 0]]
+    A = numpy.asarray(A)
+    B = numpy.asarray([q1, dq1, ddq1, q0, dq0, ddq0]).T
+    X = numpy.dot(numpy.linalg.inv(A),B)
+    [a5, a4, a3, a2, a1, a0] = X
+    T = numpy.arange(0, t, step)
+    Q = a5*T**5 + a4*T**4 + a3*T**3 + a2*T**2 + a1*T + a0
     return T, Q
     
 def get_polynomial_trajectory_multi_dof(Q_start, Q_end, Qp_start=[], Qp_end=[],
