@@ -238,7 +238,7 @@ def main():
             if x is None or y is None or z is None:
                 rospy.logwarn("Failed to find object, retrying...")
                 continue
-            rospy.loginfo("Found " + requested_object + " at " + str([x, y, z]))
+            rospy.loginfo("Found " + requested_object + " at " + str([x, y, (z+0.1)]))
             current_state = "SM_TAKE_OBJECT"
 
         # SM_TAKE_OBJECT: Transforma las coordenadas del objeto, mueve el brazo apropiado
@@ -250,7 +250,7 @@ def main():
             print("Transformed position: " + str([x, y, z]))
 
             # Añadir 10 cm a la posición z para evitar colisiones
-            z += 0.1
+            #z += 0.1
 
             if requested_object == "pringles":
                 # Lógica para el brazo izquierdo
