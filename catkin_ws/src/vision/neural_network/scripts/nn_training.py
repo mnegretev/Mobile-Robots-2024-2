@@ -49,13 +49,12 @@ class NeuralNetwork(object):
         # return a list containing the output of each layer, from input to output.
         # Include input x as the first output.
         #
-        
         y.append(x)
-        for i in range (len(self.biases)):
-            u = numpy.dot(self.weights[i], x) + self.biases[i]
-            x = 1.0/(1.0 + numpy.exp(-u))
+        for i in range(len(self.biases)):
+            z = numpy.dot(self.weights[i],x) + self.biases[i]
+            x = 1.0 / (1.0 + numpy.exp(-z))
             y.append(x)
-        
+
         return y
 
     def backpropagate(self, x, yt):
@@ -79,14 +78,13 @@ class NeuralNetwork(object):
         #     nabla_b[-l] = delta
         #     nabla_w[-l] = delta*ylpT  where ylpT is the transpose of outputs vector of layer l-1
         #
-        
-        delta = (y[-1] - yt)* y[-1] * (1 - y[-1])
+        delta = (y[-1]-yt)*y[-1]*(1-y[-1])
         nabla_b[-1] = delta
-        nabla_w[-1] = delta*y[-2].transpose()
-        for i in range(2, self.num_layers):
-            delta = numpy.dot(self.weights[-i+1].transpose(), delta) * y[-i] * (1.0 - y[-i])
+        nabla_w[-1] = delta*y[-2].T
+        for i in range (2, self.num_layers):
+            delta = numpy.dot(self.weights[-i+1].T, delta)*y[-i]*(1-y[-i])
             nabla_b[-i] = delta
-            nabla_w[-i] = numpy.dot(delta , y[-i-1].transpose())
+            nabla_w[-i] = delta*y[-i-1].T
         
         return nabla_w, nabla_b
 
@@ -171,16 +169,16 @@ def main():
     except:
         nn = NeuralNetwork([784,30,10])
         pass
-        
+    
     start = rospy.Time.now()
     nn.train_by_SGD(training_dataset, epochs, batch_size, learning_rate)
-    end = rospy.Time.now() 
+    end = rospy.Time.now()
     #numpy.savez(dataset_folder + "network",w=nn.weights, b=nn.biases)
     
     print("\nPress key to test network or ESC to exit...")
     numpy.set_printoptions(formatter={'float_kind':"{:.3f}".format})
     cmd = cv2.waitKey(0)
-    
+
     aciertos = 0
     for i in range (100):
     #while cmd != 27 and not rospy.is_shutdown():
@@ -194,9 +192,10 @@ def main():
         esperado = numpy.argmax(label.transpose())
         reconocido = numpy.argmax(y)
         if esperado == reconocido:
-                aciertos += 1
-        print("Tiempo de entrenamiento: " + str(1000*(end-start).to_sec()) + "ms")
-        print("Aciertos:" + str(aciertos))
+            aciertos += 1
+
+    print("Tiempo de entrenamiento: " + str(1000*(end-start).to_sec()) + "ms")
+    print("Aciertos:" + str(aciertos))    
 
 if __name__ == '__main__':
     main()

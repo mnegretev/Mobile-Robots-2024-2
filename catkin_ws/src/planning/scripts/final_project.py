@@ -30,7 +30,7 @@ from vision_msgs.srv import *
 from manip_msgs.srv import *
 from hri_msgs.msg import *
 
-NAME = "FULL NAME"
+NAME = "Molina González José Ángel"
 
 #
 # Global variable 'speech_recognized' contains the last recognized sentence
@@ -53,7 +53,7 @@ def callback_goal_reached(msg):
 
 def parse_command(cmd):
     obj = "pringles" if "PRINGLES" in cmd else "drink"
-    loc = [8.0,8.5] if "TABLE" in cmd else [3.22, 9.72]
+    loc = [8.5,8.5] if "TABLE" in cmd else [3, 9]
     return obj, loc
 
 #
@@ -189,7 +189,7 @@ def calculate_inverse_kinematics_left(x,y,z,roll, pitch, yaw):
     req_ik.roll  = roll
     req_ik.pitch = pitch
     req_ik.yaw   = yaw
-    req_ik.duration = 0;
+    req_ik.duration = 0
     req_ik.time_step = 0.05
     req_ik.initial_guess = []
     clt = rospy.ServiceProxy("/manipulation/la_ik_trajectory", InverseKinematicsPose2Traj)
@@ -208,7 +208,7 @@ def calculate_inverse_kinematics_right(x,y,z,roll, pitch, yaw):
     req_ik.roll  = roll
     req_ik.pitch = pitch
     req_ik.yaw   = yaw
-    req_ik.duration = 0;
+    req_ik.duration = 0
     req_ik.time_step = 0.05
     req_ik.initial_guess = []
     clt = rospy.ServiceProxy("/manipulation/ra_ik_trajectory", InverseKinematicsPose2Traj)
@@ -233,7 +233,7 @@ def get_la_polynomial_trajectory(q, duration=2.0, time_step=0.05):
 #
 # Calls the service for calculating a polynomial trajectory for the right arm
 #
-def get_la_polynomial_trajectory(q, duration=5.0, time_step=0.05):
+def get_ra_polynomial_trajectory(q, duration=5.0, time_step=0.05):
     current_p = rospy.wait_for_message("/hardware/right_arm/current_pose", Float64MultiArray)
     current_p = current_p.data
     clt = rospy.ServiceProxy("/manipulation/polynomial_trajectory", GetPolynomialTrajectory)
@@ -282,11 +282,11 @@ def main():
     pubGoalPose = rospy.Publisher('/move_base_simple/goal', PoseStamped, queue_size=10)
     pubCmdVel   = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
     pubSay      = rospy.Publisher('/hri/speech_generator', SoundRequest, queue_size=10)
-    pubLaGoalPose = rospy.Publisher("/hardware/left_arm/goal_pose" , Float64MultiArray, queue_size=10);
-    pubRaGoalPose = rospy.Publisher("/hardware/right_arm/goal_pose", Float64MultiArray, queue_size=10);
-    pubHdGoalPose = rospy.Publisher("/hardware/head/goal_pose"     , Float64MultiArray, queue_size=10);
-    pubLaGoalGrip = rospy.Publisher("/hardware/left_arm/goal_gripper" , Float64, queue_size=10);
-    pubRaGoalGrip = rospy.Publisher("/hardware/right_arm/goal_gripper", Float64, queue_size=10);
+    pubLaGoalPose = rospy.Publisher("/hardware/left_arm/goal_pose" , Float64MultiArray, queue_size=10)
+    pubRaGoalPose = rospy.Publisher("/hardware/right_arm/goal_pose", Float64MultiArray, queue_size=10)
+    pubHdGoalPose = rospy.Publisher("/hardware/head/goal_pose"     , Float64MultiArray, queue_size=10)
+    pubLaGoalGrip = rospy.Publisher("/hardware/left_arm/goal_gripper" , Float64, queue_size=10)
+    pubRaGoalGrip = rospy.Publisher("/hardware/right_arm/goal_gripper", Float64, queue_size=10)
     pubLaGoalTraj = rospy.Publisher("/manipulation/la_q_trajectory", JointTrajectory, queue_size=10)
     pubRaGoalTraj = rospy.Publisher("/manipulation/ra_q_trajectory", JointTrajectory, queue_size=10)
     listener = tf.TransformListener()
@@ -317,6 +317,88 @@ def main():
                 new_task = False
                 executing_task = True
                 
+        #SM_MOVE_HEAD: Baja la cabeza para encontrar el objetivo
+        elif current_state == "SM_MOVE_HEAD": 
+            print("Moving head")
+            move_head(0, -1)
+            current_state = "SM_FIND_OBJECT"
+
+        #SM_FIND_OBJECT: Encuentra el objetivo, obtiene sus coordenadas y se posiciona si es necesario
+        elif current_state == "SM_FIND_OBJECT":
+            if requested_object != "pringles":
+                move_base(0, -1.5, 0.4)
+                move_base(0.3, 0, 0.1)
+            x,y,z = find_object(requested_object)
+            print("Found " + requested_object + "  at " + str([x,y,z]))
+            say("Found " + requested_object)
+            current_state = "SM_TAKE_OBJECT"
+
+        #SM_TAKE_OBJECT: Transforma las coordenadas obtenidas, calcula la cinemática inversa y toma el objeto
+        elif current_state == "SM_TAKE_OBJECT":
+            x, y, z = transform_point(x, y, z)
+            print("Transformed position: " + str([x, y, z]))
+            print("Moving arm to initial position")
+            Q = get_la_polynomial_trajectory([-1, 0.2, 0, 1.55, 0, 1.16, 0])
+            move_left_arm_with_trajectory(Q)
+            print("Opening gripper")
+            say("Opening gripper")
+            move_left_gripper(1.0)
+            print("Calculating inverse kinematics")
+            say("Calculating inverse kinematics")
+            z_up = z + 0.11 # Sube un poco el brazo
+            Q = calculate_inverse_kinematics_left(x, y, z_up, 0, -math.pi / 2, 0)
+            high_pos = calculate_inverse_kinematics_left(x, y, z_up + 0.15, 0, -math.pi / 2, 0)
+            move_left_arm_with_trajectory(Q)
+            print("Closing gripper")
+            say("Closing gripper")
+            move_left_gripper(-0.1)
+            Q = get_la_polynomial_trajectory([-1, 0.2, 0, 1.55, 0, 1.16, 0])
+            move_left_arm_with_trajectory(Q)            
+            current_state = "SM_NAVIGATION"
+
+        #SM_NAVIGATION: Se mueve a la ubicación solicitada
+        elif current_state == "SM_NAVIGATION":
+            print("Navigating to " + str(requested_location))
+            say("Navigating to the requested location")
+            go_to_goal_pose(requested_location[0], requested_location[1])
+            current_state = "SM_ARRIVE"
+
+        #SM_ARRIVE: El robot llega a la ubicación
+        elif current_state == "SM_ARRIVE":
+            if goal_reached:
+                print("Arriving at "+ str(requested_location))
+                say("Arriving at the requested location")
+                current_state = "SM_DELIVER"
+                goal_reached = False
+
+        #SM_DELIVER: Deja el objeto en la ubicación especificada
+        elif current_state == "SM_DELIVER":
+            print("Leaving the object")
+            say("Leaving the object")
+            if str(requested_location) == "[8.5, 8.5]":
+                move_base(0, -1.5, 0.8)
+                low_position = get_la_polynomial_trajectory([1.1, 0.065, -0.05, 0.52, 0, 0.26, 0.1])
+                move_left_arm_with_trajectory(low_position)
+            else:
+                move_base(0, 1.5, 0.5)
+                move_left_arm_with_trajectory(high_pos)
+            print("Opening gripper")
+            say("Opening gripper")
+            move_left_gripper(1.0)
+            Q = get_la_polynomial_trajectory([-1.5, 0.2, 0, 2, 0, 1.16, 0])
+            move_left_arm_with_trajectory(Q)
+            Q = get_la_polynomial_trajectory([0, 0, 0, 0, 0, 0, 0])
+            move_left_arm_with_trajectory(Q)
+            move_left_gripper(0)
+            print("The " + requested_object + " has been delivered")
+            say("The " + requested_object + " has been delivered")
+            current_state = "SM_FINISH"
+
+        #SM_FINISH: Se ha completado la tarea
+        elif current_state == "SM_FINISH":
+            print("Job done. Waiting for new task")
+            executing_task = False
+            current_state = "SM_WAITING_NEW_TASK"
         
         loop.sleep()
 
