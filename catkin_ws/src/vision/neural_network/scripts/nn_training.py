@@ -14,7 +14,7 @@ import numpy
 import rospy
 import rospkg
 
-NAME = "FULL_NAME"
+NAME = "Molina González José Ángel"
 
 class NeuralNetwork(object):
     def __init__(self, layers, weights=None, biases=None):
@@ -50,6 +50,12 @@ class NeuralNetwork(object):
         # Include input x as the first output.
         #
         
+        y.append(x)
+        for i in range (len(self.biases)):
+            u = numpy.dot(self.weights[i], x) + self.biases[i]
+            x = 1.0/(1.0 + numpy.exp(-u))
+            y.append(x)
+        
         return y
 
     def backpropagate(self, x, yt):
@@ -74,6 +80,13 @@ class NeuralNetwork(object):
         #     nabla_w[-l] = delta*ylpT  where ylpT is the transpose of outputs vector of layer l-1
         #
         
+        delta = (y[-1] - yt)* y[-1] * (1 - y[-1])
+        nabla_b[-1] = delta
+        nabla_w[-1] = delta*y[-2].transpose()
+        for i in range(2, self.num_layers):
+            delta = numpy.dot(self.weights[-i+1].transpose(), delta) * y[-i] * (1.0 - y[-i])
+            nabla_b[-i] = delta
+            nabla_w[-i] = numpy.dot(delta , y[-i-1].transpose())
         
         return nabla_w, nabla_b
 
@@ -158,22 +171,32 @@ def main():
     except:
         nn = NeuralNetwork([784,30,10])
         pass
-    
+        
+    start = rospy.Time.now()
     nn.train_by_SGD(training_dataset, epochs, batch_size, learning_rate)
+    end = rospy.Time.now() 
     #numpy.savez(dataset_folder + "network",w=nn.weights, b=nn.biases)
     
     print("\nPress key to test network or ESC to exit...")
     numpy.set_printoptions(formatter={'float_kind':"{:.3f}".format})
     cmd = cv2.waitKey(0)
-    while cmd != 27 and not rospy.is_shutdown():
+    
+    aciertos = 0
+    for i in range (100):
+    #while cmd != 27 and not rospy.is_shutdown():
         img,label = testing_dataset[numpy.random.randint(0, 4999)]
         y = nn.feedforward(img).transpose()
         print("\nPerceptron output: " + str(y))
         print("Expected output  : "   + str(label.transpose()))
         print("Recognized digit : "   + str(numpy.argmax(y)))
         cv2.imshow("Digit", numpy.reshape(numpy.asarray(img, dtype="float32"), (28,28,1)))
-        cmd = cv2.waitKey(0)
-    
+        #cmd = cv2.waitKey(0)
+        esperado = numpy.argmax(label.transpose())
+        reconocido = numpy.argmax(y)
+        if esperado == reconocido:
+                aciertos += 1
+        print("Tiempo de entrenamiento: " + str(1000*(end-start).to_sec()) + "ms")
+        print("Aciertos:" + str(aciertos))
 
 if __name__ == '__main__':
     main()
